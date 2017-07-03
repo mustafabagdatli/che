@@ -53,5 +53,6 @@ public class GitModule extends AbstractModule {
         Multibinder.newSetBinder(binder(), CredentialsProvider.class).addBinding().to(GitBasicAuthenticationCredentialsProvider.class);
 
         bind(GitCheckoutDetector.class).asEagerSingleton();
+        bind(GitChangesDetector.class).asEagerSingleton();
     }
 }

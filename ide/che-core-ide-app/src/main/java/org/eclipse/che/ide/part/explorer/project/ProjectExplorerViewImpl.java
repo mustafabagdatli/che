@@ -350,6 +350,9 @@ public class ProjectExplorerViewImpl extends BaseView<ProjectExplorerView.Action
                 element.getFirstChildElement().getStyle()
                        .setBackgroundColor(((HasAttributes)node).getAttributes().get(CUSTOM_BACKGROUND_FILL).get(0));
             }
+            if (node instanceof HasAttributes && ((HasAttributes)node).getAttributes().containsKey("colours")) {
+                element.getFirstChildElement().getStyle().setColor(((HasAttributes)node).getAttributes().get("colours").get(0));
+            }
 
             return element;
         }
