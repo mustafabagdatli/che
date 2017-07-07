@@ -54,5 +54,6 @@ public class GitModule extends AbstractModule {
 
         bind(GitCheckoutDetector.class).asEagerSingleton();
         bind(GitChangesDetector.class).asEagerSingleton();
+        bind(GitIndexChangedDetector.class).asEagerSingleton();
     }
 }
