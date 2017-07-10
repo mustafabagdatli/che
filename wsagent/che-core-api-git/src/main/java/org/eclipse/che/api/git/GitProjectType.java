@@ -26,6 +26,9 @@ public class GitProjectType extends TransientMixin {
     public static final String VCS_PROVIDER_NAME       = "vcs.provider.name";
     public static final String GIT_CURRENT_BRANCH_NAME = "git.current.branch.name";
     public static final String GIT_REPOSITORY_REMOTES  = "git.repository.remotes";
+    public static final String GIT_MODIFIED_FILES      = "git.changed.files";
+    public static final String GIT_UNTRACKED_FILES     = "git.untracked.files";
+    public static final String GIT_ADDED_FILES         = "git.added.files";
 
     @Inject
     public GitProjectType(GitValueProviderFactory gitRepositoryValueProviderFactory) {
@@ -35,6 +38,8 @@ public class GitProjectType extends TransientMixin {
         addVariableDefinition(GIT_CURRENT_BRANCH_NAME, "Name of current git branch", false,
                               gitRepositoryValueProviderFactory);
         addVariableDefinition(GIT_REPOSITORY_REMOTES, "List of git repository remote addresses", false,
+                              gitRepositoryValueProviderFactory);
+        addVariableDefinition(GIT_MODIFIED_FILES, "List of git repository remote addresses", false,
                               gitRepositoryValueProviderFactory);
     }
 }

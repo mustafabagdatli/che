@@ -166,19 +166,18 @@ public class ProjectManager {
 
     /**
      * @return all the projects
-     *
      * @throws ServerException
      *         if projects are not initialized yet
      */
     public List<RegisteredProject> getProjects() throws ServerException {
-        return projectRegistry.getProjects();
+        List<RegisteredProject> projects = projectRegistry.getProjects();
+        projects.forEach(RegisteredProject::loadAttributes);
+        return projects;
     }
 
     /**
      * @param projectPath
-     *
      * @return project
-     *
      * @throws ServerException
      *         if projects are not initialized yet
      * @throws ServerException
@@ -201,9 +200,7 @@ public class ProjectManager {
      *         project configuration
      * @param options
      *         options for generator
-     *
      * @return new project
-     *
      * @throws ConflictException
      * @throws ForbiddenException
      * @throws ServerException
@@ -299,7 +296,8 @@ public class ProjectManager {
      * @throws ServerException
      *         if other error occurs
      */
-    public List<RegisteredProject> createBatchProjects(List<? extends NewProjectConfig> projectConfigList, boolean rewrite, ProjectOutputLineConsumerFactory lineConsumerFactory)
+    public List<RegisteredProject> createBatchProjects(List<? extends NewProjectConfig> projectConfigList, boolean rewrite,
+                                                       ProjectOutputLineConsumerFactory lineConsumerFactory)
             throws BadRequestException, ConflictException, ForbiddenException, NotFoundException, ServerException, UnauthorizedException,
                    IOException {
         fileWatcherManager.suspend();
@@ -404,9 +402,7 @@ public class ProjectManager {
      *
      * @param newConfig
      *         new config
-     *
      * @return updated config
-     *
      * @throws ForbiddenException
      * @throws ServerException
      * @throws NotFoundException
@@ -435,15 +431,15 @@ public class ProjectManager {
     }
 
     /**
-     *
      * Import source code as a Basic type of Project
      *
-     * @param path where to import
-     * @param sourceStorage where sources live
-     * @param rewrite whether rewrite or not (throw exception othervise) if such a project exists
-     *
+     * @param path
+     *         where to import
+     * @param sourceStorage
+     *         where sources live
+     * @param rewrite
+     *         whether rewrite or not (throw exception othervise) if such a project exists
      * @return Project
-     *
      * @throws ServerException
      * @throws IOException
      * @throws ForbiddenException
@@ -451,12 +447,13 @@ public class ProjectManager {
      * @throws ConflictException
      * @throws NotFoundException
      */
-    public RegisteredProject importProject(String path, SourceStorage sourceStorage, boolean rewrite, LineConsumerFactory lineConsumerFactory) throws ServerException,
-                                                                                                             IOException,
-                                                                                                             ForbiddenException,
-                                                                                                             UnauthorizedException,
-                                                                                                             ConflictException,
-                                                                                                             NotFoundException {
+    public RegisteredProject importProject(String path, SourceStorage sourceStorage, boolean rewrite,
+                                           LineConsumerFactory lineConsumerFactory) throws ServerException,
+                                                                                           IOException,
+                                                                                           ForbiddenException,
+                                                                                           UnauthorizedException,
+                                                                                           ConflictException,
+                                                                                           NotFoundException {
         fileWatcherManager.suspend();
         try {
             return doImportProject(path, sourceStorage, rewrite, lineConsumerFactory);
@@ -466,12 +463,13 @@ public class ProjectManager {
     }
 
     /** Note: Use {@link FileWatcherManager#suspend()} and {@link FileWatcherManager#resume()} while importing source code */
-    private RegisteredProject doImportProject(String path, SourceStorage sourceStorage, boolean rewrite, LineConsumerFactory lineConsumerFactory) throws ServerException,
-                                                                                                                IOException,
-                                                                                                                ForbiddenException,
-                                                                                                                UnauthorizedException,
-                                                                                                                ConflictException,
-                                                                                                                NotFoundException {
+    private RegisteredProject doImportProject(String path, SourceStorage sourceStorage, boolean rewrite,
+                                              LineConsumerFactory lineConsumerFactory) throws ServerException,
+                                                                                              IOException,
+                                                                                              ForbiddenException,
+                                                                                              UnauthorizedException,
+                                                                                              ConflictException,
+                                                                                              NotFoundException {
         final ProjectImporter importer = importers.getImporter(sourceStorage.getType());
         if (importer == null) {
             throw new NotFoundException(format("Unable import sources project from '%s'. Sources type '%s' is not supported.",
@@ -519,9 +517,10 @@ public class ProjectManager {
     /**
      * Estimates if the folder can be treated as a project of particular type
      *
-     * @param path to the folder
-     * @param projectTypeId project type to estimate
-     *
+     * @param path
+     *         to the folder
+     * @param projectTypeId
+     *         project type to estimate
      * @return resolution object
      * @throws ServerException
      * @throws NotFoundException
@@ -545,9 +544,10 @@ public class ProjectManager {
     /**
      * Estimates to which project types the folder can be converted to
      *
-     * @param path to the folder
-     * @param transientOnly whether it can be estimated to the transient types of Project only
-     *
+     * @param path
+     *         to the folder
+     * @param transientOnly
+     *         whether it can be estimated to the transient types of Project only
      * @return list of resolutions
      * @throws ServerException
      * @throws NotFoundException
@@ -573,7 +573,6 @@ public class ProjectManager {
      * deletes item including project
      *
      * @param path
-     *
      * @throws ServerException
      * @throws ForbiddenException
      * @throws NotFoundException
@@ -597,11 +596,14 @@ public class ProjectManager {
     /**
      * Copies item to new path with
      *
-     * @param itemPath path to item to copy
-     * @param newParentPath path where the item should be copied to
-     * @param newName new item name
-     * @param overwrite whether existed (if any) item should be overwritten
-     *
+     * @param itemPath
+     *         path to item to copy
+     * @param newParentPath
+     *         path where the item should be copied to
+     * @param newName
+     *         new item name
+     * @param overwrite
+     *         whether existed (if any) item should be overwritten
      * @return new item
      * @throws ServerException
      * @throws NotFoundException
@@ -646,11 +648,14 @@ public class ProjectManager {
     /**
      * Moves item to the new path
      *
-     * @param itemPath path to the item
-     * @param newParentPath path of new parent
-     * @param newName new item's name
-     * @param overwrite whether existed (if any) item should be overwritten
-     *
+     * @param itemPath
+     *         path to the item
+     * @param newParentPath
+     *         path of new parent
+     * @param newName
+     *         new item's name
+     * @param overwrite
+     *         whether existed (if any) item should be overwritten
      * @return new item
      * @throws ServerException
      * @throws NotFoundException

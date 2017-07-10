@@ -18,6 +18,14 @@
     color: #dbdbdb;
 }
 
+.colourRed {
+    color: red;
+}
+
+.colourBlue {
+    color: #608db5;
+}
+
 .cells td {
     border: none;
 }

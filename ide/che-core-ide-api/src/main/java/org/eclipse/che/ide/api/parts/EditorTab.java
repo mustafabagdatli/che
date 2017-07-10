@@ -45,6 +45,8 @@ public interface EditorTab extends View<EditorTab.ActionDelegate>, TabItem {
      */
     void setFile(VirtualFile file);
 
+    void setTitleColor(String css);
+
     /**
      * Get editor part which associated with given tab
      *

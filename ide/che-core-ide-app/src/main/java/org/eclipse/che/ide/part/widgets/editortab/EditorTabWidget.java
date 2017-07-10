@@ -267,6 +267,11 @@ public class EditorTabWidget extends Composite implements EditorTab, ContextMenu
     }
 
     @Override
+    public void setTitleColor(String css) {
+        this.title.addStyleName(css);
+    }
+
+    @Override
     public EditorPartPresenter getRelativeEditorPart() {
         return relatedEditorPart;
     }
