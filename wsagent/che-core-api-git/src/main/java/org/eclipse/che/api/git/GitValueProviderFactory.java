@@ -14,8 +14,6 @@ import com.google.inject.Inject;
 
 import org.eclipse.che.api.core.ApiException;
 import org.eclipse.che.api.git.shared.Remote;
-import org.eclipse.che.api.git.shared.Status;
-import org.eclipse.che.api.git.shared.StatusFormat;
 import org.eclipse.che.api.project.server.FolderEntry;
 import org.eclipse.che.api.project.server.type.ReadonlyValueProvider;
 import org.eclipse.che.api.project.server.type.ValueProvider;
@@ -27,11 +25,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.eclipse.che.api.git.GitProjectType.GIT_ADDED_FILES;
-import static org.eclipse.che.api.git.GitProjectType.GIT_MODIFIED_FILES;
 import static org.eclipse.che.api.git.GitProjectType.GIT_CURRENT_BRANCH_NAME;
 import static org.eclipse.che.api.git.GitProjectType.GIT_REPOSITORY_REMOTES;
-import static org.eclipse.che.api.git.GitProjectType.GIT_UNTRACKED_FILES;
 import static org.eclipse.che.api.git.GitProjectType.VCS_PROVIDER_NAME;
 
 /**
@@ -56,7 +51,7 @@ public class GitValueProviderFactory implements ValueProviderFactory {
                     if (!gitConnection.isInsideWorkTree()) {
                         return Collections.emptyList();
                     }
-                    Status status = gitConnection.status(StatusFormat.SHORT);
+
                     switch (attributeName) {
                         case VCS_PROVIDER_NAME:
                             return Collections.singletonList("git");
@@ -67,12 +62,6 @@ public class GitValueProviderFactory implements ValueProviderFactory {
                                                 .stream()
                                                 .map(Remote::getUrl)
                                                 .collect(Collectors.toList());
-                        case GIT_MODIFIED_FILES:
-                            return status.getModified();
-                        case GIT_ADDED_FILES:
-                            return status.getAdded();
-                        case GIT_UNTRACKED_FILES:
-                            return status.getUntracked();
                         default:
                             return Collections.emptyList();
                     }

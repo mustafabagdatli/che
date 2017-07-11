@@ -13,10 +13,12 @@ package org.eclipse.che.api.git;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 
+import org.eclipse.che.api.project.server.handlers.ProjectHandler;
 import org.eclipse.che.api.project.server.importer.ProjectImporter;
 import org.eclipse.che.api.project.server.type.ProjectTypeDef;
 import org.eclipse.che.api.project.server.type.ValueProviderFactory;
-import org.eclipse.che.inject.DynaModule;
+
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 
 /**
  * The module that contains configuration of the server side part of the Git extension.
@@ -32,6 +34,9 @@ public class GitModule extends AbstractModule {
         projectImporterMultibinder.addBinding().to(GitProjectImporter.class);
         Multibinder.newSetBinder(binder(), ProjectTypeDef.class).addBinding().to(GitProjectType.class);
         bind(GitConfigurationChecker.class).asEagerSingleton();
+
+        Multibinder<ProjectHandler> projectHandlersMultibinder = newSetBinder(binder(), ProjectHandler.class);
+        projectHandlersMultibinder.addBinding().to(GetTreeHandlerImpl.class);
 
         Multibinder<ValueProviderFactory> multiBinder = Multibinder.newSetBinder(binder(), ValueProviderFactory.class);
         multiBinder.addBinding().to(GitValueProviderFactory.class);

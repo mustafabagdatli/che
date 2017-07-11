@@ -43,7 +43,7 @@ import static org.eclipse.che.api.core.ErrorCodes.NO_PROJECT_ON_FILE_SYSTEM;
 public class RegisteredProject implements ProjectConfig {
 
     private final List<Problem>      problems;
-    private       Map<String, Value> attributes;
+    private final Map<String, Value> attributes;
 
     private final FolderEntry   folder;
     private final ProjectConfig config;
@@ -114,7 +114,6 @@ public class RegisteredProject implements ProjectConfig {
      * Note: the problem with {@link Problem#code} = 13 will be added when a value for some attribute is not initialized
      */
     private void initAttributes() {
-        attributes.clear();
 
         // we take only defined attributes, others ignored
         for (Map.Entry<String, Attribute> entry : types.getAttributeDefs().entrySet()) {
@@ -241,7 +240,7 @@ public class RegisteredProject implements ProjectConfig {
     public String getProblemsStr() {
         StringBuilder builder = new StringBuilder();
         int i = 0;
-        for (RegisteredProject.Problem prb : problems) {
+        for( RegisteredProject.Problem prb : problems ) {
             builder.append("[").append(i++).append("] : ").append(prb.message).append("\n");
         }
         return builder.toString();
@@ -307,10 +306,6 @@ public class RegisteredProject implements ProjectConfig {
             attrs.put(entry.getKey(), entry.getValue().getList());
         }
         return attrs;
-    }
-
-    public void loadAttributes() {
-        initAttributes();
     }
 
     public static class Problem {

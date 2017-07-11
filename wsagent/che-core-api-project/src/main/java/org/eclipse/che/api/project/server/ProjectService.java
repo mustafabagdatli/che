@@ -34,6 +34,7 @@ import org.eclipse.che.api.core.rest.Service;
 import org.eclipse.che.api.core.rest.annotations.Description;
 import org.eclipse.che.api.core.rest.annotations.GenerateLink;
 import org.eclipse.che.api.core.util.CompositeLineConsumer;
+import org.eclipse.che.api.project.server.handlers.CreateProjectHandler;
 import org.eclipse.che.api.project.server.importer.ProjectImportOutputJsonRpcLineConsumer;
 import org.eclipse.che.api.project.server.importer.ProjectImportOutputJsonRpcRegistrar;
 import org.eclipse.che.api.project.server.importer.ProjectImportOutputWSLineConsumer;
@@ -1002,6 +1003,8 @@ public class ProjectService extends Service {
                 nodes.add(newDto(TreeElement.class).withNode(injectFileLinks(asDto((FileEntry)child))));
             }
         }
+
+        projectManager.onGetTree(nodes);
 
         return nodes;
     }

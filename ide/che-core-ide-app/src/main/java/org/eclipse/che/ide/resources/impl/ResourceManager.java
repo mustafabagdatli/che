@@ -53,6 +53,7 @@ import org.eclipse.che.ide.api.resources.ResourceChangedEvent;
 import org.eclipse.che.ide.api.resources.ResourceDelta;
 import org.eclipse.che.ide.api.resources.marker.Marker;
 import org.eclipse.che.ide.api.resources.marker.MarkerChangedEvent;
+import org.eclipse.che.ide.api.vcs.VcsStatus;
 import org.eclipse.che.ide.context.AppContextImpl;
 import org.eclipse.che.ide.dto.DtoFactory;
 import org.eclipse.che.ide.resource.Path;
@@ -62,6 +63,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import static com.google.common.base.Optional.absent;
 import static com.google.common.base.Optional.fromNullable;
@@ -549,8 +551,9 @@ public final class ResourceManager {
         checkArgument(!source.getLocation().isRoot(), "Workspace root is not allowed to be copied");
 
         return findResource(destination, true).thenPromise(resource -> {
-            if (resource.isPresent() && !force){
-                return promises.reject(new IllegalStateException("Cannot create '" + destination.toString() + "'. Resource already exists."));
+            if (resource.isPresent() && !force) {
+                return promises
+                        .reject(new IllegalStateException("Cannot create '" + destination.toString() + "'. Resource already exists."));
             }
 
             return ps.copy(source.getLocation(), destination.parent(), destination.lastSegment(), force)
@@ -666,58 +669,61 @@ public final class ResourceManager {
 
                 return copyOf(visitor.resources, visitor.size);
             }
-        }).then((Function<Resource[], Resource[]>)reloaded -> {
+        }).then(new Function<Resource[], Resource[]>() {
+            @Override
+            public Resource[] apply(Resource[] reloaded) throws FunctionException {
 
-            Resource[] result = new Resource[0];
+                Resource[] result = new Resource[0];
 
-            if (descendants.isPresent()) {
-                Resource[] outdated = descendants.get();
+                if (descendants.isPresent()) {
+                    Resource[] outdated = descendants.get();
 
-                final Resource[] removed = removeAll(outdated, reloaded, false);
-                for (Resource resource : removed) {
-                    store.dispose(resource.getLocation(), false);
-                    eventBus.fireEvent(new ResourceChangedEvent(new ResourceDeltaImpl(resource, REMOVED)));
-                }
+                    final Resource[] removed = removeAll(outdated, reloaded, false);
+                    for (Resource resource : removed) {
+                        store.dispose(resource.getLocation(), false);
+                        eventBus.fireEvent(new ResourceChangedEvent(new ResourceDeltaImpl(resource, REMOVED)));
+                    }
 
-                final Resource[] updated = removeAll(outdated, reloaded, true);
-                for (Resource resource : updated) {
-                    store.register(resource);
+                    final Resource[] updated = removeAll(outdated, reloaded, true);
+                    for (Resource resource : updated) {
+                        store.register(resource);
 
-                    eventBus.fireEvent(new ResourceChangedEvent(new ResourceDeltaImpl(resource, UPDATED)));
+                        eventBus.fireEvent(new ResourceChangedEvent(new ResourceDeltaImpl(resource, UPDATED)));
 
-                    final Optional<Resource> registered = store.getResource(resource.getLocation());
-                    if (registered.isPresent()) {
-                        result = Arrays.add(result, registered.get());
+                        final Optional<Resource> registered = store.getResource(resource.getLocation());
+                        if (registered.isPresent()) {
+                            result = Arrays.add(result, registered.get());
+                        }
+                    }
+
+                    final Resource[] added = removeAll(reloaded, outdated, false);
+                    for (Resource resource : added) {
+                        store.register(resource);
+
+                        eventBus.fireEvent(new ResourceChangedEvent(new ResourceDeltaImpl(resource, ADDED)));
+
+                        final Optional<Resource> registered = store.getResource(resource.getLocation());
+                        if (registered.isPresent()) {
+                            result = Arrays.add(result, registered.get());
+                        }
+                    }
+
+
+                } else {
+                    for (Resource resource : reloaded) {
+                        store.register(resource);
+
+                        eventBus.fireEvent(new ResourceChangedEvent(new ResourceDeltaImpl(resource, ADDED)));
+
+                        final Optional<Resource> registered = store.getResource(resource.getLocation());
+                        if (registered.isPresent()) {
+                            result = Arrays.add(result, registered.get());
+                        }
                     }
                 }
 
-                final Resource[] added = removeAll(reloaded, outdated, false);
-                for (Resource resource : added) {
-                    store.register(resource);
-
-                    eventBus.fireEvent(new ResourceChangedEvent(new ResourceDeltaImpl(resource, ADDED)));
-
-                    final Optional<Resource> registered = store.getResource(resource.getLocation());
-                    if (registered.isPresent()) {
-                        result = Arrays.add(result, registered.get());
-                    }
-                }
-
-
-            } else {
-                for (Resource resource : reloaded) {
-                    store.register(resource);
-
-                    eventBus.fireEvent(new ResourceChangedEvent(new ResourceDeltaImpl(resource, ADDED)));
-
-                    final Optional<Resource> registered = store.getResource(resource.getLocation());
-                    if (registered.isPresent()) {
-                        result = Arrays.add(result, registered.get());
-                    }
-                }
+                return result;
             }
-
-            return result;
         });
     }
 
@@ -901,7 +907,16 @@ public final class ResourceManager {
             case "file":
                 final Link link = reference.getLink(GET_CONTENT_REL);
 
-                return resourceFactory.newFileImpl(path, link.getHref(), this);
+                VcsStatus vcsStatus = null;
+
+                Map<String, String> attributes = reference.getAttributes();
+                if (attributes.containsKey("vcs.status")) {
+                    vcsStatus = VcsStatus.from(attributes.get("vcs.status"));
+                }
+
+//                VcsStatus vcsStatus = VcsStatus.values()[new Random().nextInt(3)];
+
+                return resourceFactory.newFileImpl(path, link.getHref(), this, vcsStatus);
             case "folder":
                 return resourceFactory.newFolderImpl(path, this);
             case "project":
@@ -1192,7 +1207,7 @@ public final class ResourceManager {
 
         FolderImpl newFolderImpl(Path path, ResourceManager resourceManager);
 
-        FileImpl newFileImpl(Path path, String contentUrl, ResourceManager resourceManager);
+        FileImpl newFileImpl(Path path, String contentUrl, ResourceManager resourceManager, VcsStatus vcsStatus);
     }
 
     public interface ResourceManagerFactory {

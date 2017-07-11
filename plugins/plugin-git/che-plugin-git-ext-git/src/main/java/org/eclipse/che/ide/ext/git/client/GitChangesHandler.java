@@ -67,29 +67,29 @@ public class GitChangesHandler {
             @Override
             public void onWsAgentStarted(WsAgentStateEvent wsAgentStateEvent) {
                 tree = projectExplorerPresenterProvider.get().getTree();
-                tree.addExpandHandler(
-                        event -> serviceClient.getStatus(((ResourceNode)event.getNode()).getData().getLocation().uptoSegment(1))
-                                              .then(status -> {
-                                                  List<String> changed = new ArrayList<>();
-                                                  changed.addAll(status.getModified());
-                                                  changed.addAll(status.getChanged());
-
-                                                  tree.getAllChildNodes(Collections.singletonList(event.getNode()), false)
-                                                      .forEach(node -> {
-                                                          setColour((ResourceNode)node, changed, "CornflowerBlue");
-                                                          setColour((ResourceNode)node, status.getUntracked(), "red");
-                                                          setColour((ResourceNode)node, status.getAdded(), "green");
-                                                      });
-                                              }));
-
-                tree.addNodeAddedHandler(event -> event.getNodes()
-                                                       .forEach(node -> {
-                                                           HasAttributes attributesNode = (HasAttributes)node;
-                                                           Map<String, List<String>> map = attributesNode.getAttributes();
-                                                           map.put("colours", Collections.singletonList("red"));
-                                                           attributesNode.setAttributes(map);
-                                                           tree.refresh(node);
-                                                       }));
+//                tree.addExpandHandler(
+//                        event -> serviceClient.getStatus(((ResourceNode)event.getNode()).getData().getLocation().uptoSegment(1))
+//                                              .then(status -> {
+//                                                  List<String> changed = new ArrayList<>();
+//                                                  changed.addAll(status.getModified());
+//                                                  changed.addAll(status.getChanged());
+//
+//                                                  tree.getAllChildNodes(Collections.singletonList(event.getNode()), false)
+//                                                      .forEach(node -> {
+//                                                          setColour((ResourceNode)node, changed, "CornflowerBlue");
+//                                                          setColour((ResourceNode)node, status.getUntracked(), "red");
+//                                                          setColour((ResourceNode)node, status.getAdded(), "green");
+//                                                      });
+//                                              }));
+//
+//                tree.addNodeAddedHandler(event -> event.getNodes()
+//                                                       .forEach(node -> {
+//                                                           HasAttributes attributesNode = (HasAttributes)node;
+//                                                           Map<String, List<String>> map = attributesNode.getAttributes();
+//                                                           map.put("colours", Collections.singletonList("red"));
+//                                                           attributesNode.setAttributes(map);
+//                                                           tree.refresh(node);
+//                                                       }));
             }
 
             @Override

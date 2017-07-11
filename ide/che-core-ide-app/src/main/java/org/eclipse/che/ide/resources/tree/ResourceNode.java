@@ -32,10 +32,12 @@ import org.eclipse.che.ide.api.resources.marker.MarkerChangedEvent;
 import org.eclipse.che.ide.api.resources.marker.PresentableTextMarker;
 import org.eclipse.che.ide.api.resources.marker.Marker;
 import org.eclipse.che.ide.api.resources.modification.CutResourceMarker;
+import org.eclipse.che.ide.api.vcs.VcsStatus;
 import org.eclipse.che.ide.project.node.icon.NodeIconProvider;
 import org.eclipse.che.ide.project.shared.NodesResources;
 import org.eclipse.che.ide.ui.smartTree.presentation.HasPresentation;
 import org.eclipse.che.ide.ui.smartTree.presentation.NodePresentation;
+import org.eclipse.che.ide.util.loging.Log;
 import org.vectomatic.dom.svg.ui.SVGResource;
 
 import javax.validation.constraints.NotNull;
@@ -191,6 +193,16 @@ public abstract class ResourceNode<R extends Resource> extends AbstractTreeNode 
         }
 
         presentation.setPresentableTextCss(cssBuilder.toString());
+
+        if (getData().isFile() && getData().asFile().getVcsStatus() != null) {
+            VcsStatus vcsStatus = getData().asFile().getVcsStatus();
+
+            switch (vcsStatus) {
+                case UNTRACKED:
+                    presentation.setPresentableTextCss("color: red;");
+                    break;
+            }
+        }
     }
 
     @Override
