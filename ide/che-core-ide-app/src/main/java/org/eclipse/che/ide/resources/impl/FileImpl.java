@@ -35,8 +35,8 @@ import org.eclipse.che.ide.util.TextUtils;
 @Beta
 class FileImpl extends ResourceImpl implements File {
 
-    private final String contentUrl;
-    private final VcsStatus vcsStatus;
+    private final String    contentUrl;
+    private       VcsStatus vcsStatus;
 
     private String modificationStamp;
 
@@ -153,5 +153,10 @@ class FileImpl extends ResourceImpl implements File {
     @Override
     public VcsStatus getVcsStatus() {
         return vcsStatus;
+    }
+
+    @Override
+    public void setVcsStatus(VcsStatus vcsStatus) {
+        this.vcsStatus = vcsStatus;
     }
 }

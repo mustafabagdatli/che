@@ -8,17 +8,19 @@
  * Contributors:
  *   Codenvy, S.A. - initial API and implementation
  *******************************************************************************/
-package org.eclipse.che.api.project.server.handlers;
-
-import org.eclipse.che.api.project.shared.dto.ItemReference;
-import org.eclipse.che.api.project.shared.dto.TreeElement;
-
-import java.util.List;
+package org.eclipse.che.ide.api.vcs;
 
 /**
- * @author Igor Vinokur
+ * Created by ivinokur on 11.07.17.
  */
-public interface GetTreeHandler extends ProjectHandler {
+public interface HasVcsStatus {
 
-    void onGetTree(List<TreeElement> nodes);
+    /**
+     * status or null
+     *
+     * @return
+     */
+    VcsStatus getVcsStatus();
+
+    void setVcsStatus(VcsStatus vcsStatus);
 }

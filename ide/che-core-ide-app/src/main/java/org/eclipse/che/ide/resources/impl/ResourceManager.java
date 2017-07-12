@@ -801,7 +801,7 @@ public final class ResourceManager {
         }
     }
 
-    private Promise<Optional<Resource>> findResource(final Path absolutePath, boolean quiet) {
+    public Promise<Optional<Resource>> findResource(final Path absolutePath, boolean quiet) {
         return ps.getItem(absolutePath).thenPromise(itemReference -> {
             final Resource resource = newResourceFrom(itemReference);
 
@@ -906,17 +906,7 @@ public final class ResourceManager {
         switch (reference.getType()) {
             case "file":
                 final Link link = reference.getLink(GET_CONTENT_REL);
-
-                VcsStatus vcsStatus = null;
-
-                Map<String, String> attributes = reference.getAttributes();
-                if (attributes.containsKey("vcs.status")) {
-                    vcsStatus = VcsStatus.from(attributes.get("vcs.status"));
-                }
-
-//                VcsStatus vcsStatus = VcsStatus.values()[new Random().nextInt(3)];
-
-                return resourceFactory.newFileImpl(path, link.getHref(), this, vcsStatus);
+                return resourceFactory.newFileImpl(path, link.getHref(), this, VcsStatus.from(reference.getAttributes().get("vcs.status")));
             case "folder":
                 return resourceFactory.newFolderImpl(path, this);
             case "project":

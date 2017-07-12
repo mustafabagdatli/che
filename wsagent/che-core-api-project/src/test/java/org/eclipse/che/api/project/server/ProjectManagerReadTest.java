@@ -21,6 +21,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -75,7 +76,7 @@ public class ProjectManagerReadTest extends WsAgentTestBase {
         projectRegistry = new ProjectRegistry(workspaceHolder, vfsProvider, projectTypeRegistry, projectHandlerRegistry, eventService);
         projectRegistry.initProjects();
 
-        pm = new ProjectManager(vfsProvider, projectTypeRegistry, projectRegistry, projectHandlerRegistry,
+        pm = new ProjectManager(vfsProvider, Collections.emptySet(), projectTypeRegistry, projectRegistry, projectHandlerRegistry,
                                 null, fileWatcherNotificationHandler, fileTreeWatcher, workspaceHolder, fileWatcherManager);
         pm.initWatcher();
     }

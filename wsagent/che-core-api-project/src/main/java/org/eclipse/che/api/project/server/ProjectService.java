@@ -34,7 +34,6 @@ import org.eclipse.che.api.core.rest.Service;
 import org.eclipse.che.api.core.rest.annotations.Description;
 import org.eclipse.che.api.core.rest.annotations.GenerateLink;
 import org.eclipse.che.api.core.util.CompositeLineConsumer;
-import org.eclipse.che.api.project.server.handlers.CreateProjectHandler;
 import org.eclipse.che.api.project.server.importer.ProjectImportOutputJsonRpcLineConsumer;
 import org.eclipse.che.api.project.server.importer.ProjectImportOutputJsonRpcRegistrar;
 import org.eclipse.che.api.project.server.importer.ProjectImportOutputWSLineConsumer;
@@ -191,7 +190,7 @@ public class ProjectService extends Service {
                                                                                                                        NotFoundException {
         Map<String, String> options = new HashMap<>();
         MultivaluedMap<String, String> map = uriInfo.getQueryParameters();
-        for(String key: map.keySet()) {
+        for (String key : map.keySet()) {
             options.put(key, map.get(key).get(0));
         }
         String pathToProject = projectConfig.getPath();
@@ -210,7 +209,7 @@ public class ProjectService extends Service {
         eventService.publish(new ProjectCreatedEvent(workspace, project.getPath()));
 
         // TODO this throws NPE
-        //logProjectCreatedEvent(configDto.getName(), configDto.getProjectType());
+        //logProjectCreatedEvent(configDto.getName(), configDto.getVcsName());
 
         return injectProjectLinks(configDto);
     }
@@ -239,7 +238,8 @@ public class ProjectService extends Service {
         List<ProjectConfigDto> result = new ArrayList<>(projectConfigList.size());
         final ProjectOutputLineConsumerFactory outputOutputConsumerFactory = new ProjectOutputLineConsumerFactory(workspace, 300);
 
-        for (RegisteredProject registeredProject : projectManager.createBatchProjects(projectConfigList, rewrite, outputOutputConsumerFactory)) {
+        for (RegisteredProject registeredProject : projectManager
+                .createBatchProjects(projectConfigList, rewrite, outputOutputConsumerFactory)) {
 
             ProjectConfigDto projectConfig = injectProjectLinks(asDto(registeredProject));
             result.add(projectConfig);
@@ -411,8 +411,10 @@ public class ProjectService extends Service {
         final URI location = getServiceContext().getServiceUriBuilder().clone()
                                                 .path(getClass(), "getFile")
                                                 .build(new String[]{newFile.getPath().toString().substring(1)}, false);
+        ItemReference itemReference = injectFileLinks(asDto(newFile));
+        projectManager.updateVcsStatus(itemReference);
         return Response.created(location)
-                       .entity(injectFileLinks(asDto(newFile)))
+                       .entity(itemReference)
                        .build();
     }
 
@@ -861,7 +863,9 @@ public class ProjectService extends Service {
         }
 
         if (entry.isFile()) {
-            return injectFileLinks(asDto((FileEntry)entry));
+            ItemReference itemReference = asDto((FileEntry)entry);
+            projectManager.updateVcsStatus(itemReference);
+            return injectFileLinks(itemReference);
         } else {
             return injectFolderLinks(asDto((FolderEntry)entry));
         }
@@ -928,7 +932,7 @@ public class ProjectService extends Service {
     }
 
     @Inject
-    private void configureProjectSearchRequestHandler(RequestHandlerConfigurator requestHandlerConfigurator){
+    private void configureProjectSearchRequestHandler(RequestHandlerConfigurator requestHandlerConfigurator) {
         requestHandlerConfigurator.newConfiguration()
                                   .methodName("project/search")
                                   .paramsAsDto(ProjectSearchRequestDto.class)
@@ -1004,7 +1008,9 @@ public class ProjectService extends Service {
             }
         }
 
-        projectManager.onGetTree(nodes);
+        for (TreeElement treeElement : nodes) {
+            projectManager.updateVcsStatus(treeElement.getNode());
+        }
 
         return nodes;
     }

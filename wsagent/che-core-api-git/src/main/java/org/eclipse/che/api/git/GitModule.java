@@ -14,6 +14,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 
 import org.eclipse.che.api.project.server.handlers.ProjectHandler;
+import org.eclipse.che.api.project.server.handlers.VcsStatusUpdater;
 import org.eclipse.che.api.project.server.importer.ProjectImporter;
 import org.eclipse.che.api.project.server.type.ProjectTypeDef;
 import org.eclipse.che.api.project.server.type.ValueProviderFactory;
@@ -35,8 +36,8 @@ public class GitModule extends AbstractModule {
         Multibinder.newSetBinder(binder(), ProjectTypeDef.class).addBinding().to(GitProjectType.class);
         bind(GitConfigurationChecker.class).asEagerSingleton();
 
-        Multibinder<ProjectHandler> projectHandlersMultibinder = newSetBinder(binder(), ProjectHandler.class);
-        projectHandlersMultibinder.addBinding().to(GetTreeHandlerImpl.class);
+        Multibinder<VcsStatusUpdater> vcsStatusUpdaterMultibinder = newSetBinder(binder(), VcsStatusUpdater.class);
+        vcsStatusUpdaterMultibinder.addBinding().to(VCSStatusUpdaterImpl.class);
 
         Multibinder<ValueProviderFactory> multiBinder = Multibinder.newSetBinder(binder(), ValueProviderFactory.class);
         multiBinder.addBinding().to(GitValueProviderFactory.class);

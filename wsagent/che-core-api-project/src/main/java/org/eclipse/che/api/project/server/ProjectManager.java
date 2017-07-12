@@ -25,8 +25,8 @@ import org.eclipse.che.api.core.model.project.type.ProjectType;
 import org.eclipse.che.api.core.util.LineConsumerFactory;
 import org.eclipse.che.api.project.server.RegisteredProject.Problem;
 import org.eclipse.che.api.project.server.handlers.CreateProjectHandler;
-import org.eclipse.che.api.project.server.handlers.GetTreeHandler;
 import org.eclipse.che.api.project.server.handlers.ProjectHandlerRegistry;
+import org.eclipse.che.api.project.server.handlers.VcsStatusUpdater;
 import org.eclipse.che.api.project.server.importer.ProjectImporter;
 import org.eclipse.che.api.project.server.importer.ProjectImporterRegistry;
 import org.eclipse.che.api.project.server.type.AttributeValue;
@@ -34,6 +34,7 @@ import org.eclipse.che.api.project.server.type.BaseProjectType;
 import org.eclipse.che.api.project.server.type.ProjectTypeDef;
 import org.eclipse.che.api.project.server.type.ProjectTypeRegistry;
 import org.eclipse.che.api.project.server.type.ProjectTypeResolution;
+import org.eclipse.che.api.project.shared.dto.ItemReference;
 import org.eclipse.che.api.project.shared.dto.TreeElement;
 import org.eclipse.che.api.project.shared.dto.event.FileWatcherEventType;
 import org.eclipse.che.api.vfs.Path;
@@ -59,6 +60,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -77,6 +79,7 @@ public class ProjectManager {
     private static final Logger LOG = LoggerFactory.getLogger(ProjectManager.class);
 
     private final VirtualFileSystem              vfs;
+    private final Set<VcsStatusUpdater>          vcsStatusUpdaters;
     private final ProjectTypeRegistry            projectTypeRegistry;
     private final ProjectRegistry                projectRegistry;
     private final ProjectHandlerRegistry         handlers;
@@ -89,6 +92,7 @@ public class ProjectManager {
 
     @Inject
     public ProjectManager(VirtualFileSystemProvider vfsProvider,
+                          Set<VcsStatusUpdater> vcsStatusUpdaters,
                           ProjectTypeRegistry projectTypeRegistry,
                           ProjectRegistry projectRegistry,
                           ProjectHandlerRegistry handlers,
@@ -98,6 +102,7 @@ public class ProjectManager {
                           WorkspaceProjectsSyncer workspaceProjectsHolder,
                           FileWatcherManager fileWatcherManager) throws ServerException {
         this.vfs = vfsProvider.getVirtualFileSystem();
+        this.vcsStatusUpdaters = vcsStatusUpdaters;
         this.projectTypeRegistry = projectTypeRegistry;
         this.projectRegistry = projectRegistry;
         this.handlers = handlers;
@@ -168,7 +173,6 @@ public class ProjectManager {
 
     /**
      * @return all the projects
-     *
      * @throws ServerException
      *         if projects are not initialized yet
      */
@@ -178,9 +182,7 @@ public class ProjectManager {
 
     /**
      * @param projectPath
-     *
      * @return project
-     *
      * @throws ServerException
      *         if projects are not initialized yet
      * @throws ServerException
@@ -203,9 +205,7 @@ public class ProjectManager {
      *         project configuration
      * @param options
      *         options for generator
-     *
      * @return new project
-     *
      * @throws ConflictException
      * @throws ForbiddenException
      * @throws ServerException
@@ -301,7 +301,8 @@ public class ProjectManager {
      * @throws ServerException
      *         if other error occurs
      */
-    public List<RegisteredProject> createBatchProjects(List<? extends NewProjectConfig> projectConfigList, boolean rewrite, ProjectOutputLineConsumerFactory lineConsumerFactory)
+    public List<RegisteredProject> createBatchProjects(List<? extends NewProjectConfig> projectConfigList, boolean rewrite,
+                                                       ProjectOutputLineConsumerFactory lineConsumerFactory)
             throws BadRequestException, ConflictException, ForbiddenException, NotFoundException, ServerException, UnauthorizedException,
                    IOException {
         fileWatcherManager.suspend();
@@ -406,9 +407,7 @@ public class ProjectManager {
      *
      * @param newConfig
      *         new config
-     *
      * @return updated config
-     *
      * @throws ForbiddenException
      * @throws ServerException
      * @throws NotFoundException
@@ -437,15 +436,15 @@ public class ProjectManager {
     }
 
     /**
-     *
      * Import source code as a Basic type of Project
      *
-     * @param path where to import
-     * @param sourceStorage where sources live
-     * @param rewrite whether rewrite or not (throw exception othervise) if such a project exists
-     *
+     * @param path
+     *         where to import
+     * @param sourceStorage
+     *         where sources live
+     * @param rewrite
+     *         whether rewrite or not (throw exception othervise) if such a project exists
      * @return Project
-     *
      * @throws ServerException
      * @throws IOException
      * @throws ForbiddenException
@@ -453,12 +452,13 @@ public class ProjectManager {
      * @throws ConflictException
      * @throws NotFoundException
      */
-    public RegisteredProject importProject(String path, SourceStorage sourceStorage, boolean rewrite, LineConsumerFactory lineConsumerFactory) throws ServerException,
-                                                                                                             IOException,
-                                                                                                             ForbiddenException,
-                                                                                                             UnauthorizedException,
-                                                                                                             ConflictException,
-                                                                                                             NotFoundException {
+    public RegisteredProject importProject(String path, SourceStorage sourceStorage, boolean rewrite,
+                                           LineConsumerFactory lineConsumerFactory) throws ServerException,
+                                                                                           IOException,
+                                                                                           ForbiddenException,
+                                                                                           UnauthorizedException,
+                                                                                           ConflictException,
+                                                                                           NotFoundException {
         fileWatcherManager.suspend();
         try {
             return doImportProject(path, sourceStorage, rewrite, lineConsumerFactory);
@@ -468,12 +468,13 @@ public class ProjectManager {
     }
 
     /** Note: Use {@link FileWatcherManager#suspend()} and {@link FileWatcherManager#resume()} while importing source code */
-    private RegisteredProject doImportProject(String path, SourceStorage sourceStorage, boolean rewrite, LineConsumerFactory lineConsumerFactory) throws ServerException,
-                                                                                                                IOException,
-                                                                                                                ForbiddenException,
-                                                                                                                UnauthorizedException,
-                                                                                                                ConflictException,
-                                                                                                                NotFoundException {
+    private RegisteredProject doImportProject(String path, SourceStorage sourceStorage, boolean rewrite,
+                                              LineConsumerFactory lineConsumerFactory) throws ServerException,
+                                                                                              IOException,
+                                                                                              ForbiddenException,
+                                                                                              UnauthorizedException,
+                                                                                              ConflictException,
+                                                                                              NotFoundException {
         final ProjectImporter importer = importers.getImporter(sourceStorage.getType());
         if (importer == null) {
             throw new NotFoundException(format("Unable import sources project from '%s'. Sources type '%s' is not supported.",
@@ -521,9 +522,10 @@ public class ProjectManager {
     /**
      * Estimates if the folder can be treated as a project of particular type
      *
-     * @param path to the folder
-     * @param projectTypeId project type to estimate
-     *
+     * @param path
+     *         to the folder
+     * @param projectTypeId
+     *         project type to estimate
      * @return resolution object
      * @throws ServerException
      * @throws NotFoundException
@@ -547,9 +549,10 @@ public class ProjectManager {
     /**
      * Estimates to which project types the folder can be converted to
      *
-     * @param path to the folder
-     * @param transientOnly whether it can be estimated to the transient types of Project only
-     *
+     * @param path
+     *         to the folder
+     * @param transientOnly
+     *         whether it can be estimated to the transient types of Project only
      * @return list of resolutions
      * @throws ServerException
      * @throws NotFoundException
@@ -575,7 +578,6 @@ public class ProjectManager {
      * deletes item including project
      *
      * @param path
-     *
      * @throws ServerException
      * @throws ForbiddenException
      * @throws NotFoundException
@@ -596,18 +598,24 @@ public class ProjectManager {
         workspaceProjectsHolder.sync(projectRegistry);
     }
 
-    void onGetTree(List<TreeElement> nodes) {
-        handlers.getGetTreeHandler("git").onGetTree(nodes);
+    void updateVcsStatus(ItemReference itemReference) throws ServerException, NotFoundException {
+        vcsStatusUpdaters.stream()
+                         .filter(vcsStatusUpdater -> vcsStatusUpdater.getVcsName().equals("git"))
+                         .findAny()
+                         .ifPresent(vcsStatusUpdater -> vcsStatusUpdater.updateStatus(itemReference));
     }
 
     /**
      * Copies item to new path with
      *
-     * @param itemPath path to item to copy
-     * @param newParentPath path where the item should be copied to
-     * @param newName new item name
-     * @param overwrite whether existed (if any) item should be overwritten
-     *
+     * @param itemPath
+     *         path to item to copy
+     * @param newParentPath
+     *         path where the item should be copied to
+     * @param newName
+     *         new item name
+     * @param overwrite
+     *         whether existed (if any) item should be overwritten
      * @return new item
      * @throws ServerException
      * @throws NotFoundException
@@ -652,11 +660,14 @@ public class ProjectManager {
     /**
      * Moves item to the new path
      *
-     * @param itemPath path to the item
-     * @param newParentPath path of new parent
-     * @param newName new item's name
-     * @param overwrite whether existed (if any) item should be overwritten
-     *
+     * @param itemPath
+     *         path to the item
+     * @param newParentPath
+     *         path of new parent
+     * @param newName
+     *         new item's name
+     * @param overwrite
+     *         whether existed (if any) item should be overwritten
      * @return new item
      * @throws ServerException
      * @throws NotFoundException

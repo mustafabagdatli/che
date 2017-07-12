@@ -10,13 +10,17 @@
  *******************************************************************************/
 package org.eclipse.che.ide.ext.git.client;
 
+import com.google.common.base.Optional;
 import com.google.web.bindery.event.shared.EventBus;
 
 import org.eclipse.che.api.core.jsonrpc.commons.RequestHandlerConfigurator;
 import org.eclipse.che.api.git.shared.Status;
 import org.eclipse.che.api.project.shared.dto.event.GitChangeEventDto;
+import org.eclipse.che.api.promises.client.Operation;
+import org.eclipse.che.api.promises.client.OperationException;
 import org.eclipse.che.ide.api.app.AppContext;
 import org.eclipse.che.ide.api.data.tree.HasAttributes;
+import org.eclipse.che.ide.api.data.tree.Node;
 import org.eclipse.che.ide.api.editor.EditorAgent;
 import org.eclipse.che.ide.api.editor.EditorOpenedEvent;
 import org.eclipse.che.ide.api.git.GitServiceClient;
@@ -25,8 +29,12 @@ import org.eclipse.che.ide.api.machine.events.WsAgentStateHandler;
 import org.eclipse.che.ide.api.notification.NotificationManager;
 import org.eclipse.che.ide.api.parts.EditorMultiPartStack;
 import org.eclipse.che.ide.api.parts.EditorTab;
+import org.eclipse.che.ide.api.resources.File;
+import org.eclipse.che.ide.api.resources.Resource;
+import org.eclipse.che.ide.api.vcs.VcsStatus;
 import org.eclipse.che.ide.part.explorer.project.ProjectExplorerPresenter;
 import org.eclipse.che.ide.resource.Path;
+import org.eclipse.che.ide.resources.impl.ResourceManager;
 import org.eclipse.che.ide.resources.tree.ResourceNode;
 import org.eclipse.che.ide.ui.smartTree.Tree;
 
@@ -47,19 +55,23 @@ import java.util.Map;
 @Singleton
 public class GitChangesHandler {
 
+    private final AppContext                     appContext;
     private final Provider<EditorAgent>          editorAgentProvider;
     private final Provider<EditorMultiPartStack> multiPartStackProvider;
+    private       ResourceManager                resourceManager;
     private       Tree                           tree;
 
     @Inject
     public GitChangesHandler(GitResources gitResources,
-                             AppContext appContext,
                              EventBus eventBus,
                              GitServiceClient serviceClient,
+                             AppContext appContext,
+                             ResourceManager.ResourceManagerFactory resourceManagerFactory,
                              RequestHandlerConfigurator configurator,
                              Provider<EditorAgent> editorAgentProvider,
                              Provider<ProjectExplorerPresenter> projectExplorerPresenterProvider,
                              Provider<EditorMultiPartStack> multiPartStackProvider) {
+        this.appContext = appContext;
         this.editorAgentProvider = editorAgentProvider;
         this.multiPartStackProvider = multiPartStackProvider;
 
@@ -67,47 +79,13 @@ public class GitChangesHandler {
             @Override
             public void onWsAgentStarted(WsAgentStateEvent wsAgentStateEvent) {
                 tree = projectExplorerPresenterProvider.get().getTree();
-//                tree.addExpandHandler(
-//                        event -> serviceClient.getStatus(((ResourceNode)event.getNode()).getData().getLocation().uptoSegment(1))
-//                                              .then(status -> {
-//                                                  List<String> changed = new ArrayList<>();
-//                                                  changed.addAll(status.getModified());
-//                                                  changed.addAll(status.getChanged());
-//
-//                                                  tree.getAllChildNodes(Collections.singletonList(event.getNode()), false)
-//                                                      .forEach(node -> {
-//                                                          setColour((ResourceNode)node, changed, "CornflowerBlue");
-//                                                          setColour((ResourceNode)node, status.getUntracked(), "red");
-//                                                          setColour((ResourceNode)node, status.getAdded(), "green");
-//                                                      });
-//                                              }));
-//
-//                tree.addNodeAddedHandler(event -> event.getNodes()
-//                                                       .forEach(node -> {
-//                                                           HasAttributes attributesNode = (HasAttributes)node;
-//                                                           Map<String, List<String>> map = attributesNode.getAttributes();
-//                                                           map.put("colours", Collections.singletonList("red"));
-//                                                           attributesNode.setAttributes(map);
-//                                                           tree.refresh(node);
-//                                                       }));
+                resourceManager = resourceManagerFactory.newResourceManager(appContext.getDevMachine());
             }
 
             @Override
             public void onWsAgentStopped(WsAgentStateEvent event) {
             }
         });
-
-        eventBus.addHandler(EditorOpenedEvent.TYPE,
-                            event -> serviceClient.getStatus(event.getFile().getLocation().uptoSegment(1))
-                                                  .then(status -> {
-                                                      String path = event.getFile().getLocation().removeFirstSegments(1).toString();
-                                                      EditorTab tab = multiPartStackProvider.get().getTabByPart(event.getEditor());
-                                                      if (status.getModified().contains(path)) {
-                                                          tab.setTitleColor(gitResources.gitCSS().colourBlue());
-                                                      } else if (status.getUntracked().contains(path)) {
-                                                          tab.setTitleColor(gitResources.gitCSS().colourRed());
-                                                      }
-                                                  }));
 
         configureHandler(configurator);
     }
@@ -149,28 +127,34 @@ public class GitChangesHandler {
             .filter(node -> node instanceof ResourceNode &&
                             ((ResourceNode)node).getData().getLocation().equals(Path.valueOf(dto.getPath())))
             .forEach(node -> {
-                HasAttributes attributesNode = (HasAttributes)node;
-                Map<String, List<String>> map = attributesNode.getAttributes();
-                switch (dto.getType()) {
-                    case NEW:
-                        map.put("colours", Collections.singletonList("LightGreen"));
-                        attributesNode.setAttributes(map);
-                        break;
-                    case MODIFIED:
-                        map.put("colours", Collections.singletonList("CornflowerBlue"));
-                        attributesNode.setAttributes(map);
-                        break;
-                    case UNTRACKED:
-                        map.put("colours", Collections.singletonList("LightCoral"));
-                        attributesNode.setAttributes(map);
-                        break;
-                    case UNMODIFIED:
-                        map.remove("colours");
-                        attributesNode.setAttributes(map);
-                        break;
-
-                }
-                tree.refresh(node);
+//                HasAttributes attributesNode = (HasAttributes)node;
+//                Map<String, List<String>> map = attributesNode.getAttributes();
+//                switch (dto.getType()) {
+//                    case NEW:
+//                        map.put("colours", Collections.singletonList("LightGreen"));
+//                        attributesNode.setAttributes(map);
+//                        break;
+//                    case MODIFIED:
+//                        map.put("colours", Collections.singletonList("CornflowerBlue"));
+//                        attributesNode.setAttributes(map);
+//                        break;
+//                    case UNTRACKED:
+//                        map.put("colours", Collections.singletonList("LightCoral"));
+//                        attributesNode.setAttributes(map);
+//                        break;
+//                    case UNMODIFIED:
+//                        map.remove("colours");
+//                        attributesNode.setAttributes(map);
+//                        break;
+//
+//                }
+                resourceManager.findResource(Path.valueOf(dto.getPath()), true)
+                               .then(optional -> {
+                                   if (optional.isPresent()) {
+                                       ((ResourceNode)node).getData().asFile().setVcsStatus(optional.get().asFile().getVcsStatus());
+                                       tree.refresh(node);
+                                   }
+                               });
             });
         editorAgentProvider.get()
                            .getOpenedEditors()

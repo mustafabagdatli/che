@@ -94,6 +94,6 @@ public class GitGinModule extends AbstractGinModule {
                                              .build(GitOutputConsoleFactory.class));
 
         bind(GitCheckoutStatusNotificationHandler.class).asEagerSingleton();
-//        bind(GitChangesHandler.class).asEagerSingleton();
+        bind(GitChangesHandler.class).asEagerSingleton();
     }
 }

@@ -37,7 +37,6 @@ import org.eclipse.che.ide.project.node.icon.NodeIconProvider;
 import org.eclipse.che.ide.project.shared.NodesResources;
 import org.eclipse.che.ide.ui.smartTree.presentation.HasPresentation;
 import org.eclipse.che.ide.ui.smartTree.presentation.NodePresentation;
-import org.eclipse.che.ide.util.loging.Log;
 import org.vectomatic.dom.svg.ui.SVGResource;
 
 import javax.validation.constraints.NotNull;
@@ -200,6 +199,15 @@ public abstract class ResourceNode<R extends Resource> extends AbstractTreeNode 
             switch (vcsStatus) {
                 case UNTRACKED:
                     presentation.setPresentableTextCss("color: red;");
+                    break;
+                case MODIFIED:
+                    presentation.setPresentableTextCss("color: CornflowerBlue;");
+                    break;
+                case Added:
+                    presentation.setPresentableTextCss("color: LightGreen;");
+                    break;
+                case NOT_MODIFIED:
+                    presentation.setPresentableTextCss("");
                     break;
             }
         }

@@ -67,6 +67,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.stream.Collectors;
 
+import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
@@ -288,6 +289,7 @@ public class JavaDebuggerTest {
         FileWatcherNotificationHandler fileWatcherNotificationHandler = new DefaultFileWatcherNotificationHandler(vfsProvider);
         FileTreeWatcher fileTreeWatcher = new FileTreeWatcher(root, new HashSet<>(), fileWatcherNotificationHandler);
         ProjectManager projectManager = new ProjectManager(vfsProvider,
+                                                           emptySet(),
                                                            projectTypeRegistry,
                                                            projectRegistry,
                                                            projectHandlerRegistry,

@@ -13,45 +13,47 @@ package org.eclipse.che.api.git;
 import org.eclipse.che.api.git.exception.GitException;
 import org.eclipse.che.api.git.shared.Status;
 import org.eclipse.che.api.git.shared.StatusFormat;
-import org.eclipse.che.api.project.server.handlers.GetTreeHandler;
+import org.eclipse.che.api.project.server.handlers.VcsStatusUpdater;
 import org.eclipse.che.api.project.shared.dto.ItemReference;
-import org.eclipse.che.api.project.shared.dto.TreeElement;
 
 import javax.inject.Inject;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
  * @author Igor Vinokur
  */
-public class GetTreeHandlerImpl implements GetTreeHandler {
+public class VCSStatusUpdaterImpl implements VcsStatusUpdater {
     private final GitConnectionFactory gitConnectionFactory;
 
     @Inject
-    public GetTreeHandlerImpl(GitConnectionFactory gitConnectionFactory) {
+    public VCSStatusUpdaterImpl(GitConnectionFactory gitConnectionFactory) {
         this.gitConnectionFactory = gitConnectionFactory;
     }
 
     @Override
-    public String getProjectType() {
+    public String getVcsName() {
         return GitProjectType.TYPE_ID;
     }
 
     @Override
-    public void onGetTree(List<TreeElement> nodes) {
+    public void updateStatus(ItemReference reference) {
         try {
-            String nodePath = nodes.get(0).getNode().getPath().substring(1);
-            Status status = gitConnectionFactory.getConnection(nodePath.substring(0, nodePath.indexOf("/")))
+            String projectPath = reference.getPath().substring(1);
+            Status status = gitConnectionFactory.getConnection(projectPath.substring(0, projectPath.indexOf("/")))
                                                 .status(StatusFormat.SHORT);
-            nodes.forEach(treeElement -> {
-                ItemReference node = treeElement.getNode();
-                Map<String, String> attributes = new HashMap<>(node.getAttributes());
-                if (status.getUntracked().contains(node.getPath().substring(node.getPath().substring(1).indexOf("/")+ 2))) {
-                    attributes.put("vcs.status", "untracked");
-                    node.setAttributes(attributes);
-                }
-            });
+
+            Map<String, String> attributes = new HashMap<>(reference.getAttributes());
+            String nodePath = reference.getPath().substring(reference.getPath().substring(1).indexOf("/") + 2);
+            if (status.getUntracked().contains(nodePath)) {
+                attributes.put("vcs.status", "untracked");
+            } else if (status.getAdded().contains(nodePath)) {
+                attributes.put("vcs.status", "added");
+            } else if (status.getModified().contains(nodePath) || status.getChanged().contains(nodePath)) {
+                attributes.put("vcs.status", "modified");
+            }
+            reference.setAttributes(attributes);
+
         } catch (GitException e) {
             e.printStackTrace();
         }

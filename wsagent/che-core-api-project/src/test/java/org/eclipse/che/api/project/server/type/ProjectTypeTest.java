@@ -135,7 +135,7 @@ public class ProjectTypeTest {
         ProjectTypeRegistry reg = new ProjectTypeRegistry(pts);
 
         assertNotNull(reg.getProjectType("parent"));
-        //Assert.assertNull(reg.getProjectType("child"));
+        //Assert.assertNull(reg.getVcsName("child"));
 
         try {
             ProjectTypeDef projectTypeDef = reg.getProjectType("child");
@@ -217,7 +217,7 @@ public class ProjectTypeTest {
             assertThat(projectTypeDef, CoreMatchers.is(nullValue()));
         } catch (NotFoundException e) {
         }
-        //Assert.assertNull(reg.getProjectType("child"));
+        //Assert.assertNull(reg.getVcsName("child"));
     }
 
     @Test

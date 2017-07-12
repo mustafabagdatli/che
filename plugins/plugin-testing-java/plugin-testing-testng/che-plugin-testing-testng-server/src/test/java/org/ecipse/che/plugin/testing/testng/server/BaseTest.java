@@ -42,6 +42,7 @@ import org.testng.annotations.BeforeMethod;
 import java.io.File;
 import java.nio.file.PathMatcher;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -129,7 +130,7 @@ public abstract class BaseTest {
         fileTreeWatcher = new FileTreeWatcher(root, new HashSet<>(), fileWatcherNotificationHandler);
 
 
-        pm = new ProjectManager(vfsProvider, projectTypeRegistry, projectRegistry, projectHandlerRegistry,
+        pm = new ProjectManager(vfsProvider, Collections.emptySet(), projectTypeRegistry, projectRegistry, projectHandlerRegistry,
                                 importerRegistry, fileWatcherNotificationHandler, fileTreeWatcher,
                                 new TestWorkspaceHolder(new ArrayList<>()), Mockito.mock(FileWatcherManager.class));
 

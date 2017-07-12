@@ -28,7 +28,6 @@ public class ProjectHandlerRegistry {
     private final Map<String, CreateProjectHandler>     createProjectHandlers;
     private final Map<String, PostImportProjectHandler> postImportProjectHandlers;
     private final Map<String, GetItemHandler>           getItemHandlers;
-    private final Map<String, GetTreeHandler>           getTreeHandlers;
     private final Map<String, ProjectInitHandler>       projectInitHandlers;
 
     @Inject
@@ -36,7 +35,6 @@ public class ProjectHandlerRegistry {
         createProjectHandlers = new HashMap<>();
         postImportProjectHandlers = new HashMap<>();
         getItemHandlers = new HashMap<>();
-        getTreeHandlers = new HashMap<>();
         projectInitHandlers = new HashMap<>();
         projectHandlers.forEach(this::register);
     }
@@ -46,8 +44,6 @@ public class ProjectHandlerRegistry {
             createProjectHandlers.put(handler.getProjectType(), (CreateProjectHandler)handler);
         } else if (handler instanceof GetItemHandler) {
             getItemHandlers.put(handler.getProjectType(), (GetItemHandler)handler);
-        } else if (handler instanceof GetTreeHandler) {
-            getTreeHandlers.put(handler.getProjectType(), (GetTreeHandler)handler);
         } else if (handler instanceof PostImportProjectHandler) {
             postImportProjectHandlers.put(handler.getProjectType(), (PostImportProjectHandler)handler);
         } else if (handler instanceof ProjectInitHandler) {
@@ -63,10 +59,6 @@ public class ProjectHandlerRegistry {
     @Nullable
     public GetItemHandler getGetItemHandler(@NotNull String projectType) {
         return getItemHandlers.get(projectType);
-    }
-
-    public GetTreeHandler getGetTreeHandler(@NotNull String projectType) {
-        return getTreeHandlers.get(projectType);
     }
 
     @Nullable

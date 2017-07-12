@@ -114,6 +114,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static java.lang.String.format;
+import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
@@ -250,7 +251,7 @@ public class ProjectServiceTest {
         FileWatcherNotificationHandler fileWatcherNotificationHandler = new DefaultFileWatcherNotificationHandler(vfsProvider);
         FileTreeWatcher fileTreeWatcher = new FileTreeWatcher(root, new HashSet<>(), fileWatcherNotificationHandler);
 
-        pm = new ProjectManager(vfsProvider, ptRegistry, projectRegistry, phRegistry,
+        pm = new ProjectManager(vfsProvider, emptySet(), ptRegistry, projectRegistry, phRegistry,
                                 importerRegistry, fileWatcherNotificationHandler, fileTreeWatcher, workspaceHolder,
                                 fileWatcherManager);
         pm.initWatcher();

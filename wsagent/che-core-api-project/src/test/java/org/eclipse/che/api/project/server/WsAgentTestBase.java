@@ -14,6 +14,7 @@ import org.eclipse.che.api.core.ServerException;
 import org.eclipse.che.api.core.model.project.ProjectConfig;
 import org.eclipse.che.api.core.notification.EventService;
 import org.eclipse.che.api.project.server.handlers.ProjectHandlerRegistry;
+import org.eclipse.che.api.project.server.handlers.VcsStatusUpdater;
 import org.eclipse.che.api.project.server.importer.ProjectImporterRegistry;
 import org.eclipse.che.api.project.server.type.ProjectTypeDef;
 import org.eclipse.che.api.project.server.type.ProjectTypeRegistry;
@@ -34,12 +35,14 @@ import java.io.File;
 import java.nio.file.PathMatcher;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.mockito.Matchers.anySet;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -116,10 +119,10 @@ public class WsAgentTestBase {
         fileWatcherNotificationHandler = new DefaultFileWatcherNotificationHandler(vfsProvider);
         fileTreeWatcher = new FileTreeWatcher(root, new HashSet<>(), fileWatcherNotificationHandler);
         fileWatcherManager = mock(FileWatcherManager.class);
-        TestWorkspaceHolder wsHolder = new  TestWorkspaceHolder();
+        TestWorkspaceHolder wsHolder = new TestWorkspaceHolder();
 
 
-        pm = new ProjectManager(vfsProvider, projectTypeRegistry, projectRegistry, projectHandlerRegistry,
+        pm = new ProjectManager(vfsProvider, Collections.emptySet(), projectTypeRegistry, projectRegistry, projectHandlerRegistry,
                                 importerRegistry, fileWatcherNotificationHandler, fileTreeWatcher, wsHolder, fileWatcherManager);
         pm.initWatcher();
     }
@@ -235,7 +238,7 @@ public class WsAgentTestBase {
                             throw new ValueStorageException(e.getMessage());
                         }
 
-                        if(file1 != null)
+                        if (file1 != null)
                             values.add(attributeName);
 
                         return values;
@@ -274,7 +277,7 @@ public class WsAgentTestBase {
                             throw new ValueStorageException(e.getMessage());
                         }
 
-                        if(file1 != null)
+                        if (file1 != null)
                             values.add(attributeName);
 
                         return values;
@@ -319,8 +322,6 @@ public class WsAgentTestBase {
             }
         }
     }
-
-
 
 
 }
