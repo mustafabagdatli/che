@@ -12,6 +12,7 @@ package org.eclipse.che.ide.resources.impl;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Optional;
+import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.google.web.bindery.event.shared.EventBus;
@@ -27,6 +28,7 @@ import org.eclipse.che.api.promises.client.Function;
 import org.eclipse.che.api.promises.client.FunctionException;
 import org.eclipse.che.api.promises.client.Promise;
 import org.eclipse.che.api.promises.client.PromiseProvider;
+import org.eclipse.che.api.promises.client.callback.AsyncPromiseHelper;
 import org.eclipse.che.api.workspace.shared.dto.NewProjectConfigDto;
 import org.eclipse.che.api.workspace.shared.dto.ProjectConfigDto;
 import org.eclipse.che.api.workspace.shared.dto.ProjectProblemDto;
@@ -242,6 +244,10 @@ public final class ResourceManager {
      */
     public Container getWorkspaceRoot() {
         return workspaceRoot;
+    }
+
+    public Optional<Resource> getResource(Path path) {
+        return store.getResource(path);
     }
 
     /**
@@ -740,7 +746,7 @@ public final class ResourceManager {
         });
     }
 
-    protected Promise<Optional<File>> getFile(final Path absolutePath) {
+    public Promise<Optional<File>> getFile(final Path absolutePath) {
         final Optional<Resource> resourceOptional = store.getResource(absolutePath);
 
         if (resourceOptional.isPresent() && resourceOptional.get().isFile()) {
@@ -801,7 +807,7 @@ public final class ResourceManager {
         }
     }
 
-    public Promise<Optional<Resource>> findResource(final Path absolutePath, boolean quiet) {
+    private Promise<Optional<Resource>> findResource(final Path absolutePath, boolean quiet) {
         return ps.getItem(absolutePath).thenPromise(itemReference -> {
             final Resource resource = newResourceFrom(itemReference);
 
@@ -906,7 +912,12 @@ public final class ResourceManager {
         switch (reference.getType()) {
             case "file":
                 final Link link = reference.getLink(GET_CONTENT_REL);
-                return resourceFactory.newFileImpl(path, link.getHref(), this, VcsStatus.from(reference.getAttributes().get("vcs.status")));
+                String vcsStatusAttribute = reference.getAttributes().get("vcs.status");
+                return resourceFactory.newFileImpl(path,
+                                                   link.getHref(),
+                                                   this,
+                                                   vcsStatusAttribute == null ? VcsStatus.NOT_MODIFIED
+                                                                              : VcsStatus.from(vcsStatusAttribute));
             case "folder":
                 return resourceFactory.newFolderImpl(path, this);
             case "project":

@@ -30,6 +30,9 @@ import java.util.function.Consumer;
 
 import static com.google.common.collect.Sets.newConcurrentHashSet;
 import static java.nio.file.Files.isDirectory;
+import static org.eclipse.che.api.project.shared.dto.event.GitChangeEventDto.Type.ADDED;
+import static org.eclipse.che.api.project.shared.dto.event.GitChangeEventDto.Type.MODIFIED;
+import static org.eclipse.che.api.project.shared.dto.event.GitChangeEventDto.Type.UNTRACKED;
 import static org.eclipse.che.api.vfs.watcher.FileWatcherManager.EMPTY_CONSUMER;
 import static org.eclipse.che.dto.server.DtoFactory.newDto;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -109,15 +112,15 @@ public class GitChangesDetector {
                 Status status = gitConnectionFactory.getConnection(projectPath).status(StatusFormat.SHORT);
                 GitChangeEventDto.Type type;
                 if (status.getAdded().contains(normalizePath(path))) {
-                    type = GitChangeEventDto.Type.NEW;
+                    type = ADDED;
                 } else if (status.getUntracked().contains(normalizePath(path))) {
-                    type = GitChangeEventDto.Type.UNTRACKED;
+                    type = UNTRACKED;
                 } else if (status.getModified().contains(normalizePath(path))) {
-                    type = GitChangeEventDto.Type.MODIFIED;
+                    type = MODIFIED;
                 } else if (status.getChanged().contains(normalizePath(path))) {
-                    type = GitChangeEventDto.Type.MODIFIED;
+                    type = MODIFIED;
                 } else {
-                    type = GitChangeEventDto.Type.UNMODIFIED;
+                    type = GitChangeEventDto.Type.NOT_MODIFIED;
                 }
 
                 transmitter.newRequest()

@@ -22,6 +22,7 @@ import org.eclipse.che.ide.api.action.Action;
 import org.eclipse.che.ide.api.action.ActionEvent;
 import org.eclipse.che.ide.api.action.ActionManager;
 import org.eclipse.che.ide.api.action.Presentation;
+import org.eclipse.che.ide.api.app.AppContext;
 import org.eclipse.che.ide.api.constraints.Constraints;
 import org.eclipse.che.ide.api.editor.AbstractEditorPresenter;
 import org.eclipse.che.ide.api.editor.EditorAgent;
@@ -38,6 +39,8 @@ import org.eclipse.che.ide.api.resources.ResourceChangedEvent;
 import org.eclipse.che.ide.api.resources.ResourceChangedEvent.ResourceChangedHandler;
 import org.eclipse.che.ide.api.resources.ResourceDelta;
 import org.eclipse.che.ide.api.resources.VirtualFile;
+import org.eclipse.che.ide.api.vcs.VcsStatus;
+import org.eclipse.che.ide.api.vcs.VcsStatusProvider;
 import org.eclipse.che.ide.menu.PartMenu;
 import org.eclipse.che.ide.part.PartStackPresenter;
 import org.eclipse.che.ide.part.PartsComparator;
@@ -59,6 +62,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Iterables.filter;
@@ -92,6 +96,7 @@ public class EditorPartStackPresenter extends PartStackPresenter implements Edit
     private final ActionManager                    actionManager;
     private final ClosePaneAction                  closePaneAction;
     private final CloseAllTabsPaneAction           closeAllTabsPaneAction;
+    private final Set<VcsStatusProvider>           vcsStatusProviders;
     private final EditorAgent                      editorAgent;
     private final Map<EditorPaneMenuItem, TabItem> items;
 
@@ -99,8 +104,8 @@ public class EditorPartStackPresenter extends PartStackPresenter implements Edit
     private final LinkedList<EditorPartPresenter> partsOrder;
     private final LinkedList<EditorPartPresenter> closedParts;
 
-    private HandlerRegistration       closeNonPinnedEditorsHandler;
-    private HandlerRegistration       resourceChangeHandler;
+    private HandlerRegistration closeNonPinnedEditorsHandler;
+    private HandlerRegistration resourceChangeHandler;
 
     @VisibleForTesting
     PaneMenuActionItemHandler paneMenuActionItemHandler;
@@ -120,6 +125,7 @@ public class EditorPartStackPresenter extends PartStackPresenter implements Edit
                                     ActionManager actionManager,
                                     ClosePaneAction closePaneAction,
                                     CloseAllTabsPaneAction closeAllTabsPaneAction,
+                                    Set<VcsStatusProvider> vcsStatusProviders,
                                     EditorAgent editorAgent) {
         super(eventBus, partMenu, partStackEventHandler, tabItemFactory, partsComparator, view, null);
         this.editorPaneMenuItemFactory = editorPaneMenuItemFactory;
@@ -129,6 +135,7 @@ public class EditorPartStackPresenter extends PartStackPresenter implements Edit
         this.actionManager = actionManager;
         this.closePaneAction = closePaneAction;
         this.closeAllTabsPaneAction = closeAllTabsPaneAction;
+        this.vcsStatusProviders = vcsStatusProviders;
         this.editorAgent = editorAgent;
         this.view.setDelegate(this);
         this.items = new HashMap<>();
@@ -210,6 +217,18 @@ public class EditorPartStackPresenter extends PartStackPresenter implements Edit
         editorPart.addPropertyListener(propertyListener);
 
         final EditorTab editorTab = tabItemFactory.createEditorPartButton(editorPart, this);
+
+        VcsStatus vcsStatus = null;
+        for (VcsStatusProvider vcsStatusProvider : vcsStatusProviders) {
+            if (vcsStatusProvider.getVcs().equals("git")) {
+                vcsStatusProvider.getVcsStatus(file.getLocation());
+            }
+        }
+
+        if (vcsStatus != null) {
+            String s = "sd";
+        }
+        editorTab.setTitleColor("LightGreen");
 
         editorPart.addPropertyListener(new PropertyListener() {
             @Override
@@ -493,7 +512,8 @@ public class EditorPartStackPresenter extends PartStackPresenter implements Edit
         }
 
         @Override
-        public void onCloseButtonClicked(@NotNull EditorPaneMenuItem<Action> item) {}
+        public void onCloseButtonClicked(@NotNull EditorPaneMenuItem<Action> item) {
+        }
     }
 
     @VisibleForTesting

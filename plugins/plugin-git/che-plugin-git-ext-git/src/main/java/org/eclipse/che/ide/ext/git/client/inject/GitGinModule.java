@@ -18,6 +18,7 @@ import com.google.inject.Singleton;
 import org.eclipse.che.ide.api.extension.ExtensionGinModule;
 import org.eclipse.che.ide.api.preferences.PreferencePagePresenter;
 import org.eclipse.che.ide.api.project.wizard.ImportWizardRegistrar;
+import org.eclipse.che.ide.api.vcs.VcsStatusProvider;
 import org.eclipse.che.ide.ext.git.client.GitChangesHandler;
 import org.eclipse.che.ide.ext.git.client.GitCheckoutStatusNotificationHandler;
 import org.eclipse.che.ide.ext.git.client.add.AddToIndexView;
@@ -61,6 +62,7 @@ import org.eclipse.che.ide.ext.git.client.reset.files.ResetFilesView;
 import org.eclipse.che.ide.ext.git.client.reset.files.ResetFilesViewImpl;
 import org.eclipse.che.ide.ext.git.client.compare.changespanel.ChangesPanelView;
 import org.eclipse.che.ide.ext.git.client.compare.changespanel.ChangesPanelViewImpl;
+import org.eclipse.che.ide.project.node.icon.NodeIconProvider;
 
 /** @author Andrey Plotnikov */
 @ExtensionGinModule
@@ -71,6 +73,7 @@ public class GitGinModule extends AbstractGinModule {
     protected void configure() {
         GinMultibinder.newSetBinder(binder(), ImportWizardRegistrar.class).addBinding().to(GitImportWizardRegistrar.class);
         GinMultibinder.newSetBinder(binder(), PreferencePagePresenter.class).addBinding().to(CommitterPreferencePresenter.class);
+        GinMultibinder.newSetBinder(binder(), VcsStatusProvider.class).addBinding().to(GitChangesHandler.class);
 
         bind(AddToIndexView.class).to(AddToIndexViewImpl.class).in(Singleton.class);
         bind(ResetToCommitView.class).to(ResetToCommitViewImpl.class).in(Singleton.class);

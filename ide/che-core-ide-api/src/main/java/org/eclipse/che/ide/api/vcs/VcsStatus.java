@@ -10,16 +10,13 @@
  *******************************************************************************/
 package org.eclipse.che.ide.api.vcs;
 
-import java.util.Optional;
-
 import static java.util.Arrays.stream;
 
 public enum VcsStatus {
     UNTRACKED("untracked"),
-    Added("added"),
-    REMOVED("removed"),
+    ADDED("added"),
     MODIFIED("modified"),
-    NOT_MODIFIED(null);
+    NOT_MODIFIED("not_modified");
 
     private String value;
 
@@ -32,12 +29,8 @@ public enum VcsStatus {
     }
 
     public static VcsStatus from(String value) {
-        if (value == null) {
-            return NOT_MODIFIED;
-        } else {
-            return stream(VcsStatus.values()).filter(vcsStatus -> vcsStatus.getValue().equals(value))
-                                             .findAny()
-                                             .orElse(NOT_MODIFIED);
-        }
+        return stream(VcsStatus.values()).filter(vcsStatus -> vcsStatus.getValue().equals(value.toLowerCase()))
+                                         .findAny()
+                                         .orElse(null);
     }
 }

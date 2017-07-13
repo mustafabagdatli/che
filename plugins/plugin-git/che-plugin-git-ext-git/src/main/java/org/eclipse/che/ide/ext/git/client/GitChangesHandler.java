@@ -18,20 +18,19 @@ import org.eclipse.che.api.git.shared.Status;
 import org.eclipse.che.api.project.shared.dto.event.GitChangeEventDto;
 import org.eclipse.che.api.promises.client.Operation;
 import org.eclipse.che.api.promises.client.OperationException;
+import org.eclipse.che.api.promises.client.Promise;
+import org.eclipse.che.api.promises.client.js.Executor;
+import org.eclipse.che.api.promises.client.js.Promises;
 import org.eclipse.che.ide.api.app.AppContext;
-import org.eclipse.che.ide.api.data.tree.HasAttributes;
-import org.eclipse.che.ide.api.data.tree.Node;
 import org.eclipse.che.ide.api.editor.EditorAgent;
-import org.eclipse.che.ide.api.editor.EditorOpenedEvent;
 import org.eclipse.che.ide.api.git.GitServiceClient;
-import org.eclipse.che.ide.api.machine.events.WsAgentStateEvent;
-import org.eclipse.che.ide.api.machine.events.WsAgentStateHandler;
 import org.eclipse.che.ide.api.notification.NotificationManager;
 import org.eclipse.che.ide.api.parts.EditorMultiPartStack;
 import org.eclipse.che.ide.api.parts.EditorTab;
 import org.eclipse.che.ide.api.resources.File;
 import org.eclipse.che.ide.api.resources.Resource;
 import org.eclipse.che.ide.api.vcs.VcsStatus;
+import org.eclipse.che.ide.api.vcs.VcsStatusProvider;
 import org.eclipse.che.ide.part.explorer.project.ProjectExplorerPresenter;
 import org.eclipse.che.ide.resource.Path;
 import org.eclipse.che.ide.resources.impl.ResourceManager;
@@ -41,10 +40,12 @@ import org.eclipse.che.ide.ui.smartTree.Tree;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+
+import java.util.HashMap;
 import java.util.Map;
+
+import static org.eclipse.che.ide.api.vcs.VcsStatus.ADDED;
+import static org.eclipse.che.ide.api.vcs.VcsStatus.UNTRACKED;
 
 /**
  * Receives git checkout notifications caught by server side VFS file watching system.
@@ -53,13 +54,14 @@ import java.util.Map;
  * {@link NotificationManager}.
  */
 @Singleton
-public class GitChangesHandler {
+public class GitChangesHandler implements VcsStatusProvider {
 
-    private final AppContext                     appContext;
-    private final Provider<EditorAgent>          editorAgentProvider;
-    private final Provider<EditorMultiPartStack> multiPartStackProvider;
-    private       ResourceManager                resourceManager;
-    private       Tree                           tree;
+    private final GitServiceClient                       serviceClient;
+    private final AppContext                             appContext;
+    private final ResourceManager.ResourceManagerFactory resourceManagerFactory;
+    private final Provider<EditorAgent>                  editorAgentProvider;
+    private final Provider<ProjectExplorerPresenter>     projectExplorerPresenterProvider;
+    private final Provider<EditorMultiPartStack>         multiPartStackProvider;
 
     @Inject
     public GitChangesHandler(GitResources gitResources,
@@ -71,39 +73,14 @@ public class GitChangesHandler {
                              Provider<EditorAgent> editorAgentProvider,
                              Provider<ProjectExplorerPresenter> projectExplorerPresenterProvider,
                              Provider<EditorMultiPartStack> multiPartStackProvider) {
+        this.serviceClient = serviceClient;
         this.appContext = appContext;
+        this.resourceManagerFactory = resourceManagerFactory;
         this.editorAgentProvider = editorAgentProvider;
+        this.projectExplorerPresenterProvider = projectExplorerPresenterProvider;
         this.multiPartStackProvider = multiPartStackProvider;
 
-        eventBus.addHandler(WsAgentStateEvent.TYPE, new WsAgentStateHandler() {
-            @Override
-            public void onWsAgentStarted(WsAgentStateEvent wsAgentStateEvent) {
-                tree = projectExplorerPresenterProvider.get().getTree();
-                resourceManager = resourceManagerFactory.newResourceManager(appContext.getDevMachine());
-            }
-
-            @Override
-            public void onWsAgentStopped(WsAgentStateEvent event) {
-            }
-        });
-
         configureHandler(configurator);
-    }
-
-    private void setColour(ResourceNode node, List<String> statusFiles, String colour) {
-
-        statusFiles.stream()
-                   .filter(change -> node.getData()
-                                         .getLocation()
-                                         .removeFirstSegments(1)
-                                         .equals(Path.valueOf(change)))
-                   .findAny()
-                   .ifPresent(change -> {
-                       Map<String, List<String>> map = node.getAttributes();
-                       map.put("colours", Collections.singletonList(colour));
-                       node.setAttributes(map);
-                       tree.refresh(node);
-                   });
     }
 
     private void configureHandler(RequestHandlerConfigurator configurator) {
@@ -121,40 +98,15 @@ public class GitChangesHandler {
     }
 
     public void apply(String endpointId, GitChangeEventDto dto) {
+        Tree tree = projectExplorerPresenterProvider.get().getTree();
         tree.getNodeStorage()
             .getAll()
             .stream()
             .filter(node -> node instanceof ResourceNode &&
                             ((ResourceNode)node).getData().getLocation().equals(Path.valueOf(dto.getPath())))
             .forEach(node -> {
-//                HasAttributes attributesNode = (HasAttributes)node;
-//                Map<String, List<String>> map = attributesNode.getAttributes();
-//                switch (dto.getType()) {
-//                    case NEW:
-//                        map.put("colours", Collections.singletonList("LightGreen"));
-//                        attributesNode.setAttributes(map);
-//                        break;
-//                    case MODIFIED:
-//                        map.put("colours", Collections.singletonList("CornflowerBlue"));
-//                        attributesNode.setAttributes(map);
-//                        break;
-//                    case UNTRACKED:
-//                        map.put("colours", Collections.singletonList("LightCoral"));
-//                        attributesNode.setAttributes(map);
-//                        break;
-//                    case UNMODIFIED:
-//                        map.remove("colours");
-//                        attributesNode.setAttributes(map);
-//                        break;
-//
-//                }
-                resourceManager.findResource(Path.valueOf(dto.getPath()), true)
-                               .then(optional -> {
-                                   if (optional.isPresent()) {
-                                       ((ResourceNode)node).getData().asFile().setVcsStatus(optional.get().asFile().getVcsStatus());
-                                       tree.refresh(node);
-                                   }
-                               });
+                ((ResourceNode)node).getData().asFile().setVcsStatus(VcsStatus.from(dto.getType().toString()));
+                tree.refresh(node);
             });
         editorAgentProvider.get()
                            .getOpenedEditors()
@@ -165,11 +117,39 @@ public class GitChangesHandler {
     }
 
     public void apply(String endpointId, Status dto) {
+        Tree tree = projectExplorerPresenterProvider.get().getTree();
         tree.getNodeStorage()
             .getAll()
+            .stream()
+            .filter(node -> ((ResourceNode)node).getData() instanceof File)
             .forEach(node -> {
-                setColour((ResourceNode)node, dto.getUntracked(), "red");
-                setColour((ResourceNode)node, dto.getAdded(), "green");
+                File file = ((ResourceNode)node).getData().asFile();
+                file.getVcsStatus();
+                Path nodeLocation = ((ResourceNode)node).getData().getLocation();
+                if (dto.getUntracked().contains(nodeLocation.removeFirstSegments(1).toString()) && file.getVcsStatus() != UNTRACKED) {
+                    file.setVcsStatus(UNTRACKED);
+                    tree.refresh(node);
+                } else if (dto.getAdded().contains(nodeLocation.removeFirstSegments(1).toString()) && file.getVcsStatus() != ADDED) {
+                    file.setVcsStatus(ADDED);
+                    tree.refresh(node);
+                } else if (file.getVcsStatus() == UNTRACKED) {
+                    file.setVcsStatus(VcsStatus.NOT_MODIFIED);
+                    tree.refresh(node);
+                }
             });
+    }
+
+    @Override
+    public String getVcs() {
+        return "git";
+    }
+
+    @Override
+    public void getVcsStatus(Path path) {
+        Promise<Optional<File>> file = resourceManagerFactory.newResourceManager(appContext.getDevMachine()).getFile(path);
+        file.then(arg -> {
+            File file1 = arg.get();
+            file1.getVcsStatus();
+        });
     }
 }

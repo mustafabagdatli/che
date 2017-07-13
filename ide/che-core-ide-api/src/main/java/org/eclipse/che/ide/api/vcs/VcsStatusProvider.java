@@ -8,27 +8,13 @@
  * Contributors:
  *   Codenvy, S.A. - initial API and implementation
  *******************************************************************************/
-package org.eclipse.che.api.project.shared.dto.event;
+package org.eclipse.che.ide.api.vcs;
 
-import org.eclipse.che.dto.shared.DTO;
+import org.eclipse.che.api.promises.client.Promise;
+import org.eclipse.che.ide.resource.Path;
 
-/**
- * To transfer branch name after git checkout operation
- */
-@DTO
-public interface GitChangeEventDto {
-    Type getType();
+public interface VcsStatusProvider {
+    String getVcs();
 
-    String getPath();
-
-    GitChangeEventDto withType(Type type);
-
-    GitChangeEventDto withPath(String path);
-
-    enum Type {
-        ADDED,
-        MODIFIED,
-        UNTRACKED,
-        NOT_MODIFIED
-    }
+    void getVcsStatus(Path path);
 }

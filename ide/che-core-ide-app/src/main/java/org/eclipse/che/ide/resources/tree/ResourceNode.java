@@ -198,12 +198,12 @@ public abstract class ResourceNode<R extends Resource> extends AbstractTreeNode 
 
             switch (vcsStatus) {
                 case UNTRACKED:
-                    presentation.setPresentableTextCss("color: red;");
+                    presentation.setPresentableTextCss("color: LightCoral;");
                     break;
                 case MODIFIED:
                     presentation.setPresentableTextCss("color: CornflowerBlue;");
                     break;
-                case Added:
+                case ADDED:
                     presentation.setPresentableTextCss("color: LightGreen;");
                     break;
                 case NOT_MODIFIED:
