@@ -246,10 +246,6 @@ public final class ResourceManager {
         return workspaceRoot;
     }
 
-    public Optional<Resource> getResource(Path path) {
-        return store.getResource(path);
-    }
-
     /**
      * Update state of specific properties in project and save this state on the server.
      * As the result method should return the {@link Promise} with new {@link Project} object.

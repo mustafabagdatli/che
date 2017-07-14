@@ -21,13 +21,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Git implementation of {@link VcsStatusUpdater}.
+ *
  * @author Igor Vinokur
  */
-public class VCSStatusUpdaterImpl implements VcsStatusUpdater {
+public class GitStatusUpdater implements VcsStatusUpdater {
     private final GitConnectionFactory gitConnectionFactory;
 
     @Inject
-    public VCSStatusUpdaterImpl(GitConnectionFactory gitConnectionFactory) {
+    public GitStatusUpdater(GitConnectionFactory gitConnectionFactory) {
         this.gitConnectionFactory = gitConnectionFactory;
     }
 

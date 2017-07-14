@@ -35,7 +35,6 @@ import org.eclipse.che.api.project.server.type.ProjectTypeDef;
 import org.eclipse.che.api.project.server.type.ProjectTypeRegistry;
 import org.eclipse.che.api.project.server.type.ProjectTypeResolution;
 import org.eclipse.che.api.project.shared.dto.ItemReference;
-import org.eclipse.che.api.project.shared.dto.TreeElement;
 import org.eclipse.che.api.project.shared.dto.event.FileWatcherEventType;
 import org.eclipse.che.api.vfs.Path;
 import org.eclipse.che.api.vfs.VirtualFile;
@@ -301,7 +300,8 @@ public class ProjectManager {
      * @throws ServerException
      *         if other error occurs
      */
-    public List<RegisteredProject> createBatchProjects(List<? extends NewProjectConfig> projectConfigList, boolean rewrite,
+    public List<RegisteredProject> createBatchProjects(List<? extends NewProjectConfig> projectConfigList,
+                                                       boolean rewrite,
                                                        ProjectOutputLineConsumerFactory lineConsumerFactory)
             throws BadRequestException, ConflictException, ForbiddenException, NotFoundException, ServerException, UnauthorizedException,
                    IOException {
@@ -598,9 +598,18 @@ public class ProjectManager {
         workspaceProjectsHolder.sync(projectRegistry);
     }
 
+    /**
+     * Update vcs status of given {@link ItemReference} file.
+     *
+     * @param itemReference
+     *         file to update with vcs status
+     * @throws ServerException
+     * @throws NotFoundException
+     */
     void updateVcsStatus(ItemReference itemReference) throws ServerException, NotFoundException {
+        List<String> attributes = getProject(itemReference.getPath().split("/")[1]).getAttributes().get("vcs.provider.name");
         vcsStatusUpdaters.stream()
-                         .filter(vcsStatusUpdater -> vcsStatusUpdater.getVcsName().equals("git"))
+                         .filter(vcsStatusUpdater -> vcsStatusUpdater.getVcsName().equals(attributes != null ? attributes.get(0) : null))
                          .findAny()
                          .ifPresent(vcsStatusUpdater -> vcsStatusUpdater.updateStatus(itemReference));
     }

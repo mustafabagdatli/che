@@ -39,8 +39,8 @@ import org.eclipse.che.ide.api.resources.ResourceChangedEvent;
 import org.eclipse.che.ide.api.resources.ResourceChangedEvent.ResourceChangedHandler;
 import org.eclipse.che.ide.api.resources.ResourceDelta;
 import org.eclipse.che.ide.api.resources.VirtualFile;
+import org.eclipse.che.ide.api.vcs.VcsColor;
 import org.eclipse.che.ide.api.vcs.VcsStatus;
-import org.eclipse.che.ide.api.vcs.VcsStatusProvider;
 import org.eclipse.che.ide.menu.PartMenu;
 import org.eclipse.che.ide.part.PartStackPresenter;
 import org.eclipse.che.ide.part.PartsComparator;
@@ -53,6 +53,7 @@ import org.eclipse.che.ide.part.widgets.panemenu.EditorPaneMenu;
 import org.eclipse.che.ide.part.widgets.panemenu.EditorPaneMenuItem;
 import org.eclipse.che.ide.part.widgets.panemenu.EditorPaneMenuItemFactory;
 import org.eclipse.che.ide.resource.Path;
+import org.eclipse.che.ide.resources.impl.ResourceManager.ResourceManagerFactory;
 import org.eclipse.che.ide.ui.toolbar.PresentationFactory;
 
 import javax.validation.constraints.NotNull;
@@ -62,7 +63,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Iterables.filter;
@@ -90,13 +90,14 @@ public class EditorPartStackPresenter extends PartStackPresenter implements Edit
                                                                             CloseNonPinnedEditorsHandler,
                                                                             ResourceChangedHandler {
     private final PresentationFactory              presentationFactory;
+    private final AppContext                       appContext;
+    private final ResourceManagerFactory           resourceManagerFactory;
     private final EditorPaneMenuItemFactory        editorPaneMenuItemFactory;
     private final EventBus                         eventBus;
     private final EditorPaneMenu                   editorPaneMenu;
     private final ActionManager                    actionManager;
     private final ClosePaneAction                  closePaneAction;
     private final CloseAllTabsPaneAction           closeAllTabsPaneAction;
-    private final Set<VcsStatusProvider>           vcsStatusProviders;
     private final EditorAgent                      editorAgent;
     private final Map<EditorPaneMenuItem, TabItem> items;
 
@@ -114,6 +115,8 @@ public class EditorPartStackPresenter extends PartStackPresenter implements Edit
 
     @Inject
     public EditorPartStackPresenter(EditorPartStackView view,
+                                    AppContext appContext,
+                                    ResourceManagerFactory resourceManagerFactory,
                                     PartMenu partMenu,
                                     PartsComparator partsComparator,
                                     EditorPaneMenuItemFactory editorPaneMenuItemFactory,
@@ -125,9 +128,10 @@ public class EditorPartStackPresenter extends PartStackPresenter implements Edit
                                     ActionManager actionManager,
                                     ClosePaneAction closePaneAction,
                                     CloseAllTabsPaneAction closeAllTabsPaneAction,
-                                    Set<VcsStatusProvider> vcsStatusProviders,
                                     EditorAgent editorAgent) {
         super(eventBus, partMenu, partStackEventHandler, tabItemFactory, partsComparator, view, null);
+        this.appContext = appContext;
+        this.resourceManagerFactory = resourceManagerFactory;
         this.editorPaneMenuItemFactory = editorPaneMenuItemFactory;
         this.eventBus = eventBus;
         this.presentationFactory = presentationFactory;
@@ -135,7 +139,6 @@ public class EditorPartStackPresenter extends PartStackPresenter implements Edit
         this.actionManager = actionManager;
         this.closePaneAction = closePaneAction;
         this.closeAllTabsPaneAction = closeAllTabsPaneAction;
-        this.vcsStatusProviders = vcsStatusProviders;
         this.editorAgent = editorAgent;
         this.view.setDelegate(this);
         this.items = new HashMap<>();
@@ -218,17 +221,17 @@ public class EditorPartStackPresenter extends PartStackPresenter implements Edit
 
         final EditorTab editorTab = tabItemFactory.createEditorPartButton(editorPart, this);
 
-        VcsStatus vcsStatus = null;
-        for (VcsStatusProvider vcsStatusProvider : vcsStatusProviders) {
-            if (vcsStatusProvider.getVcs().equals("git")) {
-                vcsStatusProvider.getVcsStatus(file.getLocation());
-            }
-        }
-
-        if (vcsStatus != null) {
-            String s = "sd";
-        }
-        editorTab.setTitleColor("LightGreen");
+        resourceManagerFactory.newResourceManager(appContext.getDevMachine())
+                              .getFile(file.getLocation())
+                              .then(optional -> {
+                                  if (optional.isPresent()) {
+                                      VcsStatus vcsStatus = optional.get().getVcsStatus();
+                                      VcsColor color = VcsColor.from(vcsStatus);
+                                      if (color != null && vcsStatus != VcsStatus.NOT_MODIFIED) {
+                                          editorTab.setTitleColor(color.toString());
+                                      }
+                                  }
+                              });
 
         editorPart.addPropertyListener(new PropertyListener() {
             @Override

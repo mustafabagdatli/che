@@ -13,7 +13,9 @@ package org.eclipse.che.api.project.shared.dto.event;
 import org.eclipse.che.dto.shared.DTO;
 
 /**
- * To transfer branch name after git checkout operation
+ * Dto object that contains information about file event.
+ *
+ * @author Igor Vinokurs
  */
 @DTO
 public interface GitChangeEventDto {

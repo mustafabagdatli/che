@@ -845,7 +845,7 @@ public class ProjectManagerWriteTest extends WsAgentTestBase {
         assertNotNull(project);
 
         // BASE
-        //System.out.println(">>> "+project.getVcsName());
+        //System.out.println(">>> "+project.getProjectType());
 
         assertNotNull(project.getBaseFolder().getChild("file1"));
         assertEquals(fileContent, project.getBaseFolder().getChild("file1").getVirtualFile().getContentAsString());

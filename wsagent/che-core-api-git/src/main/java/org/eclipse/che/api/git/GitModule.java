@@ -13,7 +13,6 @@ package org.eclipse.che.api.git;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 
-import org.eclipse.che.api.project.server.handlers.ProjectHandler;
 import org.eclipse.che.api.project.server.handlers.VcsStatusUpdater;
 import org.eclipse.che.api.project.server.importer.ProjectImporter;
 import org.eclipse.che.api.project.server.type.ProjectTypeDef;
@@ -37,7 +36,7 @@ public class GitModule extends AbstractModule {
         bind(GitConfigurationChecker.class).asEagerSingleton();
 
         Multibinder<VcsStatusUpdater> vcsStatusUpdaterMultibinder = newSetBinder(binder(), VcsStatusUpdater.class);
-        vcsStatusUpdaterMultibinder.addBinding().to(VCSStatusUpdaterImpl.class);
+        vcsStatusUpdaterMultibinder.addBinding().to(GitStatusUpdater.class);
 
         Multibinder<ValueProviderFactory> multiBinder = Multibinder.newSetBinder(binder(), ValueProviderFactory.class);
         multiBinder.addBinding().to(GitValueProviderFactory.class);

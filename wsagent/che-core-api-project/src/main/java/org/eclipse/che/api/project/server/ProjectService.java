@@ -209,7 +209,7 @@ public class ProjectService extends Service {
         eventService.publish(new ProjectCreatedEvent(workspace, project.getPath()));
 
         // TODO this throws NPE
-        //logProjectCreatedEvent(configDto.getName(), configDto.getVcsName());
+        //logProjectCreatedEvent(configDto.getName(), configDto.getProjectType());
 
         return injectProjectLinks(configDto);
     }
