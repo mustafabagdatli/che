@@ -12,18 +12,8 @@
 unset PACKAGES
 unset SUDO
 command -v tar >/dev/null 2>&1 || { PACKAGES=${PACKAGES}" tar"; }
-CURL_INSTALLED=false
-WGET_INSTALLED=false
-command -v curl >/dev/null 2>&1 && CURL_INSTALLED=true
-command -v wget >/dev/null 2>&1 && WGET_INSTALLED=true
-
-# no curl, no wget, install curl
-if [ ${CURL_INSTALLED} = false ] && [ ${WGET_INSTALLED} = false ]; then
-  PACKAGES=${PACKAGES}" curl";
-  CURL_INSTALLED=true
-fi
-
-test "$(id -u)" = 0 || SUDO="sudo -E"
+command -v curl >/dev/null 2>&1 || { PACKAGES=${PACKAGES}" curl"; }
+test "$(id -u)" = 0 || test -f ${HOME}/is_arbitrary_user || SUDO="sudo -E"
 
 CHE_DIR=$HOME/che
 LOCAL_AGENT_BINARIES_URI='/mnt/che/exec-agent/exec-agent-${PREFIX}.tar.gz'
@@ -160,50 +150,23 @@ eval "LOCAL_AGENT_BINARIES_URI=${LOCAL_AGENT_BINARIES_URI}"
 eval "DOWNLOAD_AGENT_BINARIES_URI=${DOWNLOAD_AGENT_BINARIES_URI}"
 eval "TARGET_AGENT_BINARIES_URI=${TARGET_AGENT_BINARIES_URI}"
 
-LOCAL_AGENT_PATH=
 if [ -f "${LOCAL_AGENT_BINARIES_URI}" ]; then
     AGENT_BINARIES_URI="file://${LOCAL_AGENT_BINARIES_URI}"
-    LOCAL_AGENT_PATH=${LOCAL_AGENT_BINARIES_URI}
 elif [ -f $(echo "${LOCAL_AGENT_BINARIES_URI}" | sed "s/-${PREFIX}//g") ]; then
     AGENT_BINARIES_URI="file://"$(echo "${LOCAL_AGENT_BINARIES_URI}" | sed "s/-${PREFIX}//g")
-    LOCAL_AGENT_PATH=$(echo "${LOCAL_AGENT_BINARIES_URI}" | sed "s/-${PREFIX}//g")
 else
+    echo "Terminal Agent will be downloaded from Workspace Master"
     AGENT_BINARIES_URI=${DOWNLOAD_AGENT_BINARIES_URI}
 fi
 
-# If file is already on the filesystem, use it
-if [ ! -z ${LOCAL_AGENT_PATH} ]; then
-  tar zxf ${LOCAL_AGENT_PATH} -C ${CHE_DIR}
-else
-  echo "Exec Agent binary is downloaded remotely"
-  # Use curl
-  if [ ${CURL_INSTALLED} = true ]; then
-    if curl -o /dev/null --silent --head --fail $(echo ${AGENT_BINARIES_URI} | sed 's/\${PREFIX}/'${PREFIX}'/g'); then
-      curl -o $(echo ${TARGET_AGENT_BINARIES_URI} | sed 's/\${PREFIX}/'${PREFIX}'/g' | sed 's/file:\/\///g') -s $(echo ${AGENT_BINARIES_URI} | sed 's/\${PREFIX}/'${PREFIX}'/g')
-    elif curl -o /dev/null --silent --head --fail $(echo ${AGENT_BINARIES_URI} | sed 's/-\${PREFIX}//g'); then
-      curl -o $(echo ${TARGET_AGENT_BINARIES_URI} | sed 's/\${PREFIX}/'${PREFIX}'/g' | sed 's/file:\/\///g') -s $(echo ${AGENT_BINARIES_URI} | sed 's/-\${PREFIX}//g')
-    fi
-    curl -s $(echo ${TARGET_AGENT_BINARIES_URI} | sed 's/\${PREFIX}/'${PREFIX}'/g') | tar  xzf - -C ${CHE_DIR}
-  else
-    # replace https by http as wget may not be able to handle ssl
-    AGENT_BINARIES_URI=$(echo ${AGENT_BINARIES_URI} | sed 's/https/http/g')
 
-    # use wget
-    WGET_SPIDER="wget --spider"
-    if wget  2>&1 | grep -q BusyBox; then
-      WGET_SPIDER="wget -s"
-    fi
-    LOCAL_DOWNLOAD=$(echo ${TARGET_AGENT_BINARIES_URI} | sed 's/\${PREFIX}/'${PREFIX}'/g' | sed 's/file:\/\///g')
-    if ${WGET_SPIDER} -q $(echo ${AGENT_BINARIES_URI} | sed 's/\${PREFIX}/'${PREFIX}'/g') >/dev/null; then
-      wget -qO ${LOCAL_DOWNLOAD} $(echo ${AGENT_BINARIES_URI} | sed 's/\${PREFIX}/'${PREFIX}'/g')
-    elif ${WGET_SPIDER} -q $(echo ${AGENT_BINARIES_URI} | sed 's/-\${PREFIX}//g'); then
-      wget -qO- ${LOCAL_DOWNLOAD} $(echo ${AGENT_BINARIES_URI} | sed 's/-\${PREFIX}//g')
-    fi
-    tar xzf ${LOCAL_DOWNLOAD} -C ${CHE_DIR}
-  fi
+if curl -o /dev/null --silent --head --fail $(echo ${AGENT_BINARIES_URI} | sed 's/\${PREFIX}/'${PREFIX}'/g'); then
+    curl -o $(echo ${TARGET_AGENT_BINARIES_URI} | sed 's/\${PREFIX}/'${PREFIX}'/g' | sed 's/file:\/\///g') -s $(echo ${AGENT_BINARIES_URI} | sed 's/\${PREFIX}/'${PREFIX}'/g')
+elif curl -o /dev/null --silent --head --fail $(echo ${AGENT_BINARIES_URI} | sed 's/-\${PREFIX}//g'); then
+    curl -o $(echo ${TARGET_AGENT_BINARIES_URI} | sed 's/\${PREFIX}/'${PREFIX}'/g' | sed 's/file:\/\///g') -s $(echo ${AGENT_BINARIES_URI} | sed 's/-\${PREFIX}//g')
 fi
 
-
+curl -s $(echo ${TARGET_AGENT_BINARIES_URI} | sed 's/\${PREFIX}/'${PREFIX}'/g') | tar  xzf - -C ${CHE_DIR}
 
 if [ -f /bin/bash ]; then
     SHELL_INTERPRETER="/bin/bash"

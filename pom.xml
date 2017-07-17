@@ -57,6 +57,33 @@
                 <version>${version.jsr305.plugin}</version>
             </dependency>
             <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-client</artifactId>
+                <version>${io.fabric8.kubernetes-client}</version>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>generex</artifactId>
+                        <groupId>com.github.mifmif</groupId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-model</artifactId>
+                <version>${io.fabric8.kubernetes-model}</version>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>jackson-module-jaxb-annotations</artifactId>
+                        <groupId>com.fasterxml.jackson.module</groupId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>openshift-client</artifactId>
+                <version>${io.fabric8.openshift-client.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.eclipse.che</groupId>
                 <artifactId>assembly-factory-war</artifactId>
                 <version>${che.version}</version>
@@ -139,6 +166,11 @@
             <dependency>
                 <groupId>org.eclipse.che</groupId>
                 <artifactId>infrastructure-docker</artifactId>
+                <version>${che.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.che</groupId>
+                <artifactId>infrastructure-openshift</artifactId>
                 <version>${che.version}</version>
             </dependency>
             <dependency>

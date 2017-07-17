@@ -12,18 +12,9 @@
 unset PACKAGES
 unset SUDO
 command -v tar >/dev/null 2>&1 || { PACKAGES=${PACKAGES}" tar"; }
-CURL_INSTALLED=false
-WGET_INSTALLED=false
-command -v curl >/dev/null 2>&1 && CURL_INSTALLED=true
-command -v wget >/dev/null 2>&1 && WGET_INSTALLED=true
+command -v curl >/dev/null 2>&1 || { PACKAGES=${PACKAGES}" curl"; }
+test "$(id -u)" = 0 || test -f ${HOME}/is_arbitrary_user || SUDO="sudo -E"
 
-# no curl, no wget, install curl
-if [ ${CURL_INSTALLED} = false ] && [ ${WGET_INSTALLED} = false ]; then
-  PACKAGES=${PACKAGES}" curl";
-  CURL_INSTALLED=true
-fi
-
-test "$(id -u)" = 0 || SUDO="sudo -E"
 
 LOCAL_AGENT_BINARIES_URI="/mnt/che/ws-agent.tar.gz"
 DOWNLOAD_AGENT_BINARIES_URI='${WORKSPACE_MASTER_URI}/agent-binaries/ws-agent.tar.gz'
@@ -44,17 +35,18 @@ fi
 MACHINE_TYPE=$(uname -m)
 
 mkdir -p ${CHE_DIR}
-${SUDO} mkdir -p /projects
-${SUDO} sh -c "chown -R $(id -u -n) /projects"
-${SUDO} chmod 755 /projects
 
+if [ ! -f ${HOME}/is_arbitrary_user ]; then
+    ${SUDO} mkdir -p /projects
+    ${SUDO} sh -c "chown -R $(id -u -n) /projects"
+fi
 
 INSTALL_JDK=false
 command -v ${JAVA_HOME}/bin/java >/dev/null 2>&1 || {
     INSTALL_JDK=true;
 } && {
-    java_version=$(${JAVA_HOME}/bin/java -version 2>&1 | grep version  | awk '{print $NF}' | sed 's/"//g' | cut -d '.' -f2)
-    if [ -z ${java_version} ] || [ ! "${java_version}" -eq "8" ]; then
+    java_version=$(${JAVA_HOME}/bin/java -version 2>&1 | sed 's/.* version "\\(.*\\)\\.\\(.*\\)\\..*"/\\1\\2/; 1q')
+    if [ ! -z "${java_version##*[!0-9]*}" ] && [ "${java_version}" -lt "18" ]; then
         INSTALL_JDK=true;
     fi
 }
@@ -77,7 +69,7 @@ if echo ${LINUX_TYPE} | grep -qi "rhel"; then
     fi
 
     test "${PACKAGES}" = "" || {
-        ${SUDO} yum install -y ${PACKAGES};
+        ${SUDO} yum install ${PACKAGES};
     }
 
     if [ ${INSTALL_JDK} = true ]; then
@@ -206,7 +198,7 @@ elif echo ${LINUX_TYPE} | grep -qi "CentOS"; then
          ln -s /usr/lib/jvm/java-1.8.0-openjdk $JAVA_HOME
      fi
 
-# Red Hat Enterprise Linux 6 
+# Red Hat Enterprise Linux 6
 ############################
 elif echo ${LINUX_TYPE} | grep -qi "Red Hat"; then
     if [ ${INSTALL_JDK} = true ]; then
@@ -214,7 +206,7 @@ elif echo ${LINUX_TYPE} | grep -qi "Red Hat"; then
     fi
 
     test "${PACKAGES}" = "" || {
-        ${SUDO} yum install -y ${PACKAGES};
+        ${SUDO} yum install ${PACKAGES};
     }
 
     if [ ${INSTALL_JDK} = true ]; then
@@ -244,23 +236,13 @@ eval "DOWNLOAD_AGENT_BINARIES_URI=${DOWNLOAD_AGENT_BINARIES_URI}"
 
 if [ -f "${LOCAL_AGENT_BINARIES_URI}" ] && [ -s "${LOCAL_AGENT_BINARIES_URI}" ]
 then
-    tar zxf "${LOCAL_AGENT_BINARIES_URI}" -C ${CHE_DIR}/ws-agent
+    AGENT_BINARIES_URI="file://${LOCAL_AGENT_BINARIES_URI}"
 else
     echo "Workspace Agent will be downloaded from Workspace Master"
     AGENT_BINARIES_URI=${DOWNLOAD_AGENT_BINARIES_URI}
-    if [ ${CURL_INSTALLED} = true ]; then
-      curl -s  ${AGENT_BINARIES_URI} | tar  xzf - -C ${CHE_DIR}/ws-agent
-    else
-      # replace https by http as wget may not be able to handle ssl
-      AGENT_BINARIES_URI=$(echo ${AGENT_BINARIES_URI} | sed 's/https/http/g')
-
-      # use wget
-      wget -qO- ${AGENT_BINARIES_URI} | tar xzf - -C ${CHE_DIR}/ws-agent
-    fi
-
 fi
 
-
+curl -s  ${AGENT_BINARIES_URI} | tar  xzf - -C ${CHE_DIR}/ws-agent
 
 ###############################################
 ### ws-agent run command will be added here ###
