@@ -39,8 +39,6 @@ import org.eclipse.che.ide.api.resources.ResourceChangedEvent;
 import org.eclipse.che.ide.api.resources.ResourceChangedEvent.ResourceChangedHandler;
 import org.eclipse.che.ide.api.resources.ResourceDelta;
 import org.eclipse.che.ide.api.resources.VirtualFile;
-import org.eclipse.che.ide.api.vcs.VcsColor;
-import org.eclipse.che.ide.api.vcs.VcsStatus;
 import org.eclipse.che.ide.menu.PartMenu;
 import org.eclipse.che.ide.part.PartStackPresenter;
 import org.eclipse.che.ide.part.PartsComparator;
@@ -225,11 +223,7 @@ public class EditorPartStackPresenter extends PartStackPresenter implements Edit
                               .getFile(file.getLocation())
                               .then(optional -> {
                                   if (optional.isPresent()) {
-                                      VcsStatus vcsStatus = optional.get().getVcsStatus();
-                                      VcsColor color = VcsColor.from(vcsStatus);
-                                      if (color != null && vcsStatus != VcsStatus.NOT_MODIFIED) {
-                                          editorTab.setTitleColor(color.toString());
-                                      }
+                                      editorTab.setTitleColor(optional.get().getVcsStatus().getColor());
                                   }
                               });
 

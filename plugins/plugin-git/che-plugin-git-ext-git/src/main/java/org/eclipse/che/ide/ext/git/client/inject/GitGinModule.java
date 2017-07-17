@@ -61,7 +61,6 @@ import org.eclipse.che.ide.ext.git.client.reset.files.ResetFilesView;
 import org.eclipse.che.ide.ext.git.client.reset.files.ResetFilesViewImpl;
 import org.eclipse.che.ide.ext.git.client.compare.changespanel.ChangesPanelView;
 import org.eclipse.che.ide.ext.git.client.compare.changespanel.ChangesPanelViewImpl;
-import org.eclipse.che.ide.project.node.icon.NodeIconProvider;
 
 /** @author Andrey Plotnikov */
 @ExtensionGinModule

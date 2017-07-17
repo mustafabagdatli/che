@@ -15,8 +15,6 @@ import org.eclipse.che.api.core.jsonrpc.commons.RequestTransmitter;
 import org.eclipse.che.api.git.exception.GitException;
 import org.eclipse.che.api.git.shared.Status;
 import org.eclipse.che.api.git.shared.StatusFormat;
-import org.eclipse.che.api.project.server.ProjectRegistry;
-import org.eclipse.che.api.project.server.RegisteredProject;
 import org.eclipse.che.api.vfs.watcher.FileWatcherManager;
 import org.slf4j.Logger;
 
@@ -33,7 +31,11 @@ import static org.eclipse.che.api.vfs.watcher.FileWatcherManager.EMPTY_CONSUMER;
 import static org.eclipse.che.dto.server.DtoFactory.newDto;
 import static org.slf4j.LoggerFactory.getLogger;
 
-
+/**
+ * Detects changes in index file and sends message to client Git handler.
+ *
+ * @author Igor Vinokur
+ */
 public class GitIndexChangedDetector {
     private static final Logger LOG = getLogger(GitIndexChangedDetector.class);
 
@@ -41,9 +43,9 @@ public class GitIndexChangedDetector {
     private static final String INDEX_FILE      = "index";
     private static final String INCOMING_METHOD = "track:git-index";
     private static final String OUTGOING_METHOD = "event:git-index";
+
     private final RequestTransmitter   transmitter;
     private final FileWatcherManager   manager;
-    private final ProjectRegistry      projectRegistry;
     private final GitConnectionFactory gitConnectionFactory;
 
     private final Set<String> endpointIds = newConcurrentHashSet();
@@ -53,11 +55,9 @@ public class GitIndexChangedDetector {
     @Inject
     public GitIndexChangedDetector(RequestTransmitter transmitter,
                                    FileWatcherManager manager,
-                                   ProjectRegistry projectRegistry,
                                    GitConnectionFactory gitConnectionFactory) {
         this.transmitter = transmitter;
         this.manager = manager;
-        this.projectRegistry = projectRegistry;
         this.gitConnectionFactory = gitConnectionFactory;
     }
 
@@ -105,15 +105,17 @@ public class GitIndexChangedDetector {
 
     private Consumer<String> transmitConsumer(String path) {
         return id -> {
-            final RegisteredProject project = projectRegistry.getProject(path.substring(1, path.substring(1).indexOf("/") + 1));
-            String projectPath = project.getBaseFolder().getVirtualFile().toIoFile().getAbsolutePath();
+            String project = (path.startsWith("/") ? path.substring(1) : path).split("/")[0];
             try {
-                Status status = gitConnectionFactory.getConnection(projectPath).status(StatusFormat.SHORT);
+                Status status = gitConnectionFactory.getConnection(project).status(StatusFormat.SHORT);
                 Status statusDto = newDto(Status.class);
                 statusDto.setAdded(status.getAdded());
                 statusDto.setUntracked(status.getUntracked());
                 statusDto.setChanged(status.getChanged());
                 statusDto.setModified(status.getModified());
+                statusDto.setMissing(status.getMissing());
+                statusDto.setRemoved(status.getRemoved());
+                statusDto.setConflicting(status.getConflicting());
                 transmitter.newRequest()
                            .endpointId(id)
                            .methodName(OUTGOING_METHOD)

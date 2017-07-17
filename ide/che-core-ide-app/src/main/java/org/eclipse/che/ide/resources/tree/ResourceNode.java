@@ -32,7 +32,6 @@ import org.eclipse.che.ide.api.resources.marker.MarkerChangedEvent;
 import org.eclipse.che.ide.api.resources.marker.PresentableTextMarker;
 import org.eclipse.che.ide.api.resources.marker.Marker;
 import org.eclipse.che.ide.api.resources.modification.CutResourceMarker;
-import org.eclipse.che.ide.api.vcs.VcsColor;
 import org.eclipse.che.ide.api.vcs.VcsStatus;
 import org.eclipse.che.ide.project.node.icon.NodeIconProvider;
 import org.eclipse.che.ide.project.shared.NodesResources;
@@ -198,7 +197,7 @@ public abstract class ResourceNode<R extends Resource> extends AbstractTreeNode 
         if (getData().isFile() && getData().asFile().getVcsStatus() != null) {
             VcsStatus vcsStatus = getData().asFile().getVcsStatus();
             if (vcsStatus != NOT_MODIFIED) {
-                presentation.setPresentableTextCss("color: " + VcsColor.from(vcsStatus) + ";");
+                presentation.setPresentableTextCss("color: " + vcsStatus.getColor() + ";");
             }
         }
     }

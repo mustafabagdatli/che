@@ -18,7 +18,7 @@ import org.eclipse.che.ide.api.notification.NotificationManager;
 import org.eclipse.che.ide.api.parts.EditorMultiPartStack;
 import org.eclipse.che.ide.api.parts.EditorTab;
 import org.eclipse.che.ide.api.resources.File;
-import org.eclipse.che.ide.api.vcs.VcsColor;
+import org.eclipse.che.ide.api.resources.Resource;
 import org.eclipse.che.ide.api.vcs.VcsStatus;
 import org.eclipse.che.ide.part.explorer.project.ProjectExplorerPresenter;
 import org.eclipse.che.ide.resource.Path;
@@ -78,9 +78,9 @@ public class GitChangesHandler {
         tree.getNodeStorage()
             .getAll()
             .stream()
-            .filter(node -> node instanceof ResourceNode && ((ResourceNode)node).getData()
-                                                                                .getLocation()
-                                                                                .equals(Path.valueOf(dto.getPath())))
+            .filter(node -> node instanceof FileNode && ((ResourceNode)node).getData()
+                                                                            .getLocation()
+                                                                            .equals(Path.valueOf(dto.getPath())))
             .forEach(node -> {
                 ((ResourceNode)node).getData().asFile().setVcsStatus(VcsStatus.from(dto.getType().toString()));
                 tree.refresh(node);
@@ -93,33 +93,29 @@ public class GitChangesHandler {
                            .forEach(editor -> {
                                VcsStatus vcsStatus = VcsStatus.from(dto.getType().toString());
                                EditorTab tab = multiPartStackProvider.get().getTabByPart(editor);
-                               if (vcsStatus != null && vcsStatus == NOT_MODIFIED) {
-                                   tab.setTitleColor("#FFFFFF");
-                               } else {
-                                   VcsColor color = VcsColor.from(vcsStatus);
-                                   if (color != null) {
-                                       tab.setTitleColor(color.toString());
-                                   }
+                               if (vcsStatus != null) {
+                                   tab.setTitleColor(vcsStatus.getColor());
                                }
                            });
     }
 
-    public void apply(String endpointId, Status dto) {
+    public void apply(String endpointId, Status status) {
         Tree tree = projectExplorerPresenterProvider.get().getTree();
         tree.getNodeStorage()
             .getAll()
             .stream()
             .filter(node -> node instanceof FileNode)
             .forEach(node -> {
-                File file = ((ResourceNode)node).getData().asFile();
-                Path nodeLocation = ((ResourceNode)node).getData().getLocation();
-                if (dto.getUntracked().contains(nodeLocation.removeFirstSegments(1).toString()) && file.getVcsStatus() != UNTRACKED) {
+                Resource resource = ((ResourceNode)node).getData();
+                File file = resource.asFile();
+                String nodeLocation = resource.getLocation().removeFirstSegments(1).toString();
+                if (status.getUntracked().contains(nodeLocation) && file.getVcsStatus() != UNTRACKED) {
                     file.setVcsStatus(UNTRACKED);
                     tree.refresh(node);
-                } else if (dto.getAdded().contains(nodeLocation.removeFirstSegments(1).toString()) && file.getVcsStatus() != ADDED) {
+                } else if (status.getAdded().contains(nodeLocation) && file.getVcsStatus() != ADDED) {
                     file.setVcsStatus(ADDED);
                     tree.refresh(node);
-                } else if (file.getVcsStatus() == UNTRACKED) {
+                } else if (!status.getUntracked().contains(nodeLocation) && file.getVcsStatus() == UNTRACKED) {
                     file.setVcsStatus(VcsStatus.NOT_MODIFIED);
                     tree.refresh(node);
                 }
@@ -129,12 +125,13 @@ public class GitChangesHandler {
                            .getOpenedEditors()
                            .forEach(editor -> {
                                EditorTab tab = multiPartStackProvider.get().getTabByPart(editor);
-                               if (dto.getUntracked().contains(tab.getFile().getLocation().removeFirstSegments(1).toString())) {
-                                   tab.setTitleColor(VcsColor.from(UNTRACKED).toString());
-                               } else if (dto.getAdded().contains(tab.getFile().getLocation().removeFirstSegments(1).toString())) {
-                                   tab.setTitleColor(VcsColor.from(ADDED).toString());
+                               String nodeLocation = tab.getFile().getLocation().removeFirstSegments(1).toString();
+                               if (status.getUntracked().contains(nodeLocation)) {
+                                   tab.setTitleColor(UNTRACKED.getColor());
+                               } else if (status.getAdded().contains(nodeLocation)) {
+                                   tab.setTitleColor(ADDED.getColor());
                                } else {
-                                   tab.setTitleColor("#FFFFFF");
+                                   tab.setTitleColor(NOT_MODIFIED.getColor());
                                }
                            });
     }

@@ -116,6 +116,7 @@ public class ProjectService extends Service {
     private final ProjectManager                      projectManager;
     private final EventService                        eventService;
     private final ProjectServiceLinksInjector         projectServiceLinksInjector;
+    private final ProjectServiceVcsStatusInjector     vcsStatusInjector;
     private final RequestTransmitter                  transmitter;
     private final ProjectImportOutputJsonRpcRegistrar projectImportHandlerRegistrar;
     private final String                              workspace;
@@ -124,11 +125,13 @@ public class ProjectService extends Service {
     public ProjectService(ProjectManager projectManager,
                           EventService eventService,
                           ProjectServiceLinksInjector projectServiceLinksInjector,
+                          ProjectServiceVcsStatusInjector vcsStatusInjector,
                           RequestTransmitter transmitter,
                           ProjectImportOutputJsonRpcRegistrar projectImportHandlerRegistrar) {
         this.projectManager = projectManager;
         this.eventService = eventService;
         this.projectServiceLinksInjector = projectServiceLinksInjector;
+        this.vcsStatusInjector = vcsStatusInjector;
         this.transmitter = transmitter;
         this.projectImportHandlerRegistrar = projectImportHandlerRegistrar;
         this.workspace = WorkspaceIdProvider.getWorkspaceId();
@@ -271,7 +274,7 @@ public class ProjectService extends Service {
             projectConfigDto.setPath(path);
         }
 
-        return asDto(projectManager.updateProject(projectConfigDto));
+        return asDto(projectManager.updateProject(projecGittConfigDto));
     }
 
     @DELETE
@@ -411,10 +414,8 @@ public class ProjectService extends Service {
         final URI location = getServiceContext().getServiceUriBuilder().clone()
                                                 .path(getClass(), "getFile")
                                                 .build(new String[]{newFile.getPath().toString().substring(1)}, false);
-        ItemReference itemReference = injectFileLinks(asDto(newFile));
-        projectManager.updateVcsStatus(itemReference);
         return Response.created(location)
-                       .entity(itemReference)
+                       .entity(injectFileLinks(vcsStatusInjector.injectVcsStatus(asDto(newFile))))
                        .build();
     }
 
@@ -805,7 +806,7 @@ public class ProjectService extends Service {
         final ArrayList<ItemReference> result = new ArrayList<>(children.size());
         for (VirtualFileEntry child : children) {
             if (child.isFile()) {
-                result.add(injectFileLinks(asDto((FileEntry)child)));
+                result.add(injectFileLinks(vcsStatusInjector.injectVcsStatus(asDto((FileEntry)child))));
             } else {
                 result.add(injectFolderLinks(asDto((FolderEntry)child)));
             }
@@ -863,9 +864,7 @@ public class ProjectService extends Service {
         }
 
         if (entry.isFile()) {
-            ItemReference itemReference = asDto((FileEntry)entry);
-            projectManager.updateVcsStatus(itemReference);
-            return injectFileLinks(itemReference);
+            return injectFileLinks(vcsStatusInjector.injectVcsStatus(asDto((FileEntry)entry)));
         } else {
             return injectFolderLinks(asDto((FolderEntry)entry));
         }
@@ -1004,12 +1003,8 @@ public class ProjectService extends Service {
                                   .withNode(injectFolderLinks(asDto((FolderEntry)child)))
                                   .withChildren(getTree((FolderEntry)child, depth - 1, includeFiles)));
             } else {
-                nodes.add(newDto(TreeElement.class).withNode(injectFileLinks(asDto((FileEntry)child))));
+                nodes.add(newDto(TreeElement.class).withNode(injectFileLinks(vcsStatusInjector.injectVcsStatus(asDto((FileEntry)child)))));
             }
-        }
-
-        for (TreeElement treeElement : nodes) {
-            projectManager.updateVcsStatus(treeElement.getNode());
         }
 
         return nodes;

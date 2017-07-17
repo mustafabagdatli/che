@@ -12,7 +12,6 @@ package org.eclipse.che.ide.resources.impl;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Optional;
-import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.google.web.bindery.event.shared.EventBus;
@@ -28,7 +27,6 @@ import org.eclipse.che.api.promises.client.Function;
 import org.eclipse.che.api.promises.client.FunctionException;
 import org.eclipse.che.api.promises.client.Promise;
 import org.eclipse.che.api.promises.client.PromiseProvider;
-import org.eclipse.che.api.promises.client.callback.AsyncPromiseHelper;
 import org.eclipse.che.api.workspace.shared.dto.NewProjectConfigDto;
 import org.eclipse.che.api.workspace.shared.dto.ProjectConfigDto;
 import org.eclipse.che.api.workspace.shared.dto.ProjectProblemDto;
@@ -65,7 +63,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import static com.google.common.base.Optional.absent;
 import static com.google.common.base.Optional.fromNullable;
@@ -671,61 +668,58 @@ public final class ResourceManager {
 
                 return copyOf(visitor.resources, visitor.size);
             }
-        }).then(new Function<Resource[], Resource[]>() {
-            @Override
-            public Resource[] apply(Resource[] reloaded) throws FunctionException {
+        }).then((Function<Resource[], Resource[]>)reloaded -> {
 
-                Resource[] result = new Resource[0];
+            Resource[] result = new Resource[0];
 
-                if (descendants.isPresent()) {
-                    Resource[] outdated = descendants.get();
+            if (descendants.isPresent()) {
+                Resource[] outdated = descendants.get();
 
-                    final Resource[] removed = removeAll(outdated, reloaded, false);
-                    for (Resource resource : removed) {
-                        store.dispose(resource.getLocation(), false);
-                        eventBus.fireEvent(new ResourceChangedEvent(new ResourceDeltaImpl(resource, REMOVED)));
-                    }
+                final Resource[] removed = removeAll(outdated, reloaded, false);
+                for (Resource resource : removed) {
+                    store.dispose(resource.getLocation(), false);
+                    eventBus.fireEvent(new ResourceChangedEvent(new ResourceDeltaImpl(resource, REMOVED)));
+                }
 
-                    final Resource[] updated = removeAll(outdated, reloaded, true);
-                    for (Resource resource : updated) {
-                        store.register(resource);
+                final Resource[] updated = removeAll(outdated, reloaded, true);
+                for (Resource resource : updated) {
+                    store.register(resource);
 
-                        eventBus.fireEvent(new ResourceChangedEvent(new ResourceDeltaImpl(resource, UPDATED)));
+                    eventBus.fireEvent(new ResourceChangedEvent(new ResourceDeltaImpl(resource, UPDATED)));
 
-                        final Optional<Resource> registered = store.getResource(resource.getLocation());
-                        if (registered.isPresent()) {
-                            result = Arrays.add(result, registered.get());
-                        }
-                    }
-
-                    final Resource[] added = removeAll(reloaded, outdated, false);
-                    for (Resource resource : added) {
-                        store.register(resource);
-
-                        eventBus.fireEvent(new ResourceChangedEvent(new ResourceDeltaImpl(resource, ADDED)));
-
-                        final Optional<Resource> registered = store.getResource(resource.getLocation());
-                        if (registered.isPresent()) {
-                            result = Arrays.add(result, registered.get());
-                        }
-                    }
-
-
-                } else {
-                    for (Resource resource : reloaded) {
-                        store.register(resource);
-
-                        eventBus.fireEvent(new ResourceChangedEvent(new ResourceDeltaImpl(resource, ADDED)));
-
-                        final Optional<Resource> registered = store.getResource(resource.getLocation());
-                        if (registered.isPresent()) {
-                            result = Arrays.add(result, registered.get());
-                        }
+                    final Optional<Resource> registered = store.getResource(resource.getLocation());
+                    if (registered.isPresent()) {
+                        result = Arrays.add(result, registered.get());
                     }
                 }
 
-                return result;
+                final Resource[] added = removeAll(reloaded, outdated, false);
+                for (Resource resource : added) {
+                    store.register(resource);
+
+                    eventBus.fireEvent(new ResourceChangedEvent(new ResourceDeltaImpl(resource, ADDED)));
+
+                    final Optional<Resource> registered = store.getResource(resource.getLocation());
+                    if (registered.isPresent()) {
+                        result = Arrays.add(result, registered.get());
+                    }
+                }
+
+
+            } else {
+                for (Resource resource : reloaded) {
+                    store.register(resource);
+
+                    eventBus.fireEvent(new ResourceChangedEvent(new ResourceDeltaImpl(resource, ADDED)));
+
+                    final Optional<Resource> registered = store.getResource(resource.getLocation());
+                    if (registered.isPresent()) {
+                        result = Arrays.add(result, registered.get());
+                    }
+                }
             }
+
+            return result;
         });
     }
 

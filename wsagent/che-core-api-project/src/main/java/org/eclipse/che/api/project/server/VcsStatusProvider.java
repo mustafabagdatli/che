@@ -8,16 +8,16 @@
  * Contributors:
  *   Codenvy, S.A. - initial API and implementation
  *******************************************************************************/
-package org.eclipse.che.api.project.server.handlers;
+package org.eclipse.che.api.project.server;
 
-import org.eclipse.che.api.project.shared.dto.ItemReference;
+import org.eclipse.che.api.core.ServerException;
 
 /**
- * Updates vcs status of given {@link ItemReference} file.
+ * Version control system status provider.
  *
  * @author Igor Vinokur
  */
-public interface VcsStatusUpdater {
+public interface VcsStatusProvider {
 
     /**
      * Returns name of the version control system.
@@ -25,10 +25,17 @@ public interface VcsStatusUpdater {
     String getVcsName();
 
     /**
-     * Set vcs status to attributes of the given file.
+     * Get vcs status of the given file.
      *
-     * @param reference
-     *         file to update with vcs status
+     * @param path
+     *         path to the given file
      */
-    void updateStatus(ItemReference reference);
+    VcsStatus getStatus(String path) throws ServerException;
+
+    enum VcsStatus {
+        ADDED,
+        MODIFIED,
+        NOT_MODIFIED,
+        UNTRACKED
+    }
 }

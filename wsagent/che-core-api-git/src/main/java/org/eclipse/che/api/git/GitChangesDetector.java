@@ -15,8 +15,6 @@ import org.eclipse.che.api.core.jsonrpc.commons.RequestTransmitter;
 import org.eclipse.che.api.git.exception.GitException;
 import org.eclipse.che.api.git.shared.Status;
 import org.eclipse.che.api.git.shared.StatusFormat;
-import org.eclipse.che.api.project.server.ProjectRegistry;
-import org.eclipse.che.api.project.server.RegisteredProject;
 import org.eclipse.che.api.project.shared.dto.event.GitChangeEventDto;
 import org.eclipse.che.api.vfs.watcher.FileWatcherManager;
 import org.slf4j.Logger;
@@ -37,7 +35,11 @@ import static org.eclipse.che.api.vfs.watcher.FileWatcherManager.EMPTY_CONSUMER;
 import static org.eclipse.che.dto.server.DtoFactory.newDto;
 import static org.slf4j.LoggerFactory.getLogger;
 
-
+/**
+ * Detects changes in files and sends message to client Git handler.
+ *
+ * @author Igor Vinokur
+ */
 public class GitChangesDetector {
     private static final Logger LOG = getLogger(GitChangesDetector.class);
 
@@ -47,7 +49,6 @@ public class GitChangesDetector {
     private final RequestTransmitter   transmitter;
     private final FileWatcherManager   manager;
     private final GitConnectionFactory gitConnectionFactory;
-    private final ProjectRegistry      projectRegistry;
 
     private final Set<String> endpointIds = newConcurrentHashSet();
 
@@ -56,12 +57,10 @@ public class GitChangesDetector {
     @Inject
     public GitChangesDetector(RequestTransmitter transmitter,
                               FileWatcherManager manager,
-                              GitConnectionFactory gitConnectionFactory,
-                              ProjectRegistry projectRegistry) {
+                              GitConnectionFactory gitConnectionFactory) {
         this.transmitter = transmitter;
         this.manager = manager;
         this.gitConnectionFactory = gitConnectionFactory;
-        this.projectRegistry = projectRegistry;
     }
 
     @Inject
@@ -106,18 +105,19 @@ public class GitChangesDetector {
 
     private Consumer<String> transmitConsumer(String path) {
         return id -> {
-            final RegisteredProject project = projectRegistry.getProject(path.substring(1, path.substring(1).indexOf("/") + 1));
-            String projectPath = project.getBaseFolder().getVirtualFile().toIoFile().getAbsolutePath();
+            String normalizedPath = path.startsWith("/") ? path.substring(1) : path;
+            String project = normalizedPath.split("/")[0];
+            String itemPath = normalizedPath.substring(normalizedPath.indexOf("/") + 1);
             try {
-                Status status = gitConnectionFactory.getConnection(projectPath).status(StatusFormat.SHORT);
+                Status status = gitConnectionFactory.getConnection(project).status(StatusFormat.SHORT);
                 GitChangeEventDto.Type type;
-                if (status.getAdded().contains(normalizePath(path))) {
+                if (status.getAdded().contains(itemPath)) {
                     type = ADDED;
-                } else if (status.getUntracked().contains(normalizePath(path))) {
+                } else if (status.getUntracked().contains(itemPath)) {
                     type = UNTRACKED;
-                } else if (status.getModified().contains(normalizePath(path))) {
+                } else if (status.getModified().contains(itemPath)) {
                     type = MODIFIED;
-                } else if (status.getChanged().contains(normalizePath(path))) {
+                } else if (status.getChanged().contains(itemPath)) {
                     type = MODIFIED;
                 } else {
                     type = GitChangeEventDto.Type.NOT_MODIFIED;
@@ -132,9 +132,5 @@ public class GitChangesDetector {
                 LOG.error(e.getMessage());
             }
         };
-    }
-
-    private String normalizePath(String path) {
-        return path.substring(path.substring(1).indexOf("/") + 2);
     }
 }

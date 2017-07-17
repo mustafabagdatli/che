@@ -32,7 +32,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *             ResourceDelta delta = event.getDelta();
  *             Resource resource = delta.getResource();
  *
- *             if (delta.getKind() == ResourceDelta.NEW) {
+ *             if (delta.getKind() == ResourceDelta.ADDED) {
  *                 //handle resource creation
  *             }
  *

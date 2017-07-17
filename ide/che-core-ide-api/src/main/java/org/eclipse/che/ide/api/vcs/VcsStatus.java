@@ -10,9 +10,12 @@
  *******************************************************************************/
 package org.eclipse.che.ide.api.vcs;
 
+import org.eclipse.che.ide.api.theme.Style;
+
 import static java.util.Arrays.stream;
 
 public enum VcsStatus {
+
     UNTRACKED("untracked"),
     ADDED("added"),
     MODIFIED("modified"),
@@ -26,6 +29,21 @@ public enum VcsStatus {
 
     public String getValue() {
         return value;
+    }
+
+    public String getColor() {
+        switch (this) {
+            case UNTRACKED:
+                return Style.getVcsStatusUntrackedColor();
+            case MODIFIED:
+                return Style.getVcsStatusModifiedColor();
+            case ADDED:
+                return Style.getVcsStatusAddedColor();
+            case NOT_MODIFIED:
+                return Style.getMainFontColor();
+            default:
+                return null;
+        }
     }
 
     public static VcsStatus from(String value) {

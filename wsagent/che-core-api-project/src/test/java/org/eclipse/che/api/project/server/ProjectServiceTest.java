@@ -158,10 +158,11 @@ public class ProjectServiceTest {
 
     private static final String EXCLUDE_SEARCH_PATH = ".codenvy";
 
-    private ProjectManager              pm;
-    private ResourceLauncher            launcher;
-    private ProjectHandlerRegistry      phRegistry;
-    private ProjectServiceLinksInjector projectServiceLinksInjector;
+    private ProjectManager                  pm;
+    private ResourceLauncher                launcher;
+    private ProjectHandlerRegistry          phRegistry;
+    private ProjectServiceLinksInjector     projectServiceLinksInjector;
+    private ProjectServiceVcsStatusInjector vcsStatusInjector;
 
     private org.eclipse.che.commons.env.EnvironmentContext env;
 
@@ -244,6 +245,7 @@ public class ProjectServiceTest {
         importerRegistry = new ProjectImporterRegistry(Collections.<ProjectImporter>emptySet());
 
         projectServiceLinksInjector = new ProjectServiceLinksInjector();
+        vcsStatusInjector = new ProjectServiceVcsStatusInjector(pm, emptySet());
 
         projectRegistry = new ProjectRegistry(workspaceHolder, vfsProvider, ptRegistry, phRegistry, eventService);
         projectRegistry.initProjects();
@@ -251,7 +253,7 @@ public class ProjectServiceTest {
         FileWatcherNotificationHandler fileWatcherNotificationHandler = new DefaultFileWatcherNotificationHandler(vfsProvider);
         FileTreeWatcher fileTreeWatcher = new FileTreeWatcher(root, new HashSet<>(), fileWatcherNotificationHandler);
 
-        pm = new ProjectManager(vfsProvider, emptySet(), ptRegistry, projectRegistry, phRegistry,
+        pm = new ProjectManager(vfsProvider, ptRegistry, projectRegistry, phRegistry,
                                 importerRegistry, fileWatcherNotificationHandler, fileTreeWatcher, workspaceHolder,
                                 fileWatcherManager);
         pm.initWatcher();
@@ -283,6 +285,7 @@ public class ProjectServiceTest {
         dependencies.addInstance(ProjectHandlerRegistry.class, phRegistry);
         dependencies.addInstance(EventService.class, eventService);
         dependencies.addInstance(ProjectServiceLinksInjector.class, projectServiceLinksInjector);
+        dependencies.addInstance(ProjectServiceVcsStatusInjector.class, vcsStatusInjector);
         dependencies.addInstance(RequestTransmitter.class, mock(RequestTransmitter.class));
         dependencies.addInstance(ProjectImportOutputJsonRpcRegistrar.class, new ProjectImportOutputJsonRpcRegistrar());
 

@@ -104,7 +104,7 @@ public interface ResourceDelta {
     int DERIVED = 0x1000;
 
     /**
-     * Returns the kind of this resource delta. Normally, one of {@code NEW}, {@code REMOVED}, {@code UPDATED},
+     * Returns the kind of this resource delta. Normally, one of {@code ADDED}, {@code REMOVED}, {@code UPDATED},
      * {@code LOADED}, {@code UNLOADED}.
      *
      * @return the kind of this resource delta.
@@ -130,7 +130,7 @@ public interface ResourceDelta {
      * <p/>
      * A simple move operation would result in the following delta information. If a resource is moved from A to B (with no other
      * changes to A or B), then A will have kind {@code REMOVED}, with flag {@code MOVED_TO}, and {@link #getToPath()} on A will
-     * return the path for B. B will have kind {@code NEW}, with flag {@code MOVED_FROM}, and {@link #getFromPath()} on B will
+     * return the path for B. B will have kind {@code ADDED}, with flag {@code MOVED_FROM}, and {@link #getFromPath()} on B will
      * return the path for A.
      *
      * @return the flags
